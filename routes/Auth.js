@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 const SECRET = process.env.SECRET_KEY;
 const jwt = require('jsonwebtoken');
+const authentification = require('../middleware');
 
 router.post('/login', async (req, res) => {
     try {
@@ -60,7 +61,7 @@ router.get('/token', async (req, res) => {
     }
 });
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authentification, async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
         const _user = await User.findOne({where: {email}});

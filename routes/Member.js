@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { Member } = require('../models'); // <-- Assure-toi que ton modèle est bien exporté dans /models/index.js
+const authentification = require('../middleware');
 
-router.post('/', async (req, res) => {
+router.post('/', authentification, async (req, res) => {
   try {
     const member = await Member.create(req.body);
     const registrationNumber = `${member.id.toString()}`;
@@ -15,7 +16,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/', async (req, res) => {
+router.put('/', authentification, async (req, res) => {
   try {
     const { createdAt, updatedAt, id, registrationNumber, ...updateData } = req.body;
     const member = await Member.update(updateData, { where: { id } });
@@ -25,7 +26,7 @@ router.put('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', authentification, async (req, res) => {
   try {
     const members = await Member.findAll();
     res.status(200).json({
@@ -38,7 +39,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authentification, async (req, res) => {
   try {
     const member = await Member.findByPk(req.params.id);
 
