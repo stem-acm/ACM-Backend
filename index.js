@@ -33,4 +33,6 @@ app.use((req, res) => {
     res.status(404).json({ success: false, message: 'route not found ...', data: [] });
 });
 
-app.listen(port, console.log(`server run in ${port}`));
+// adapter a la vercel
+// app.listen(port, console.log(`server run in ${port}`));
+module.exports = app;
