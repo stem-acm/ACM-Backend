@@ -4,8 +4,6 @@ const { Activity } = require('../models');
 const authentification = require('../middleware');
 
 router.post('/', authentification, async (req, res) => {
-  console.log(req.user, req.body);
-  
   try {
     const createdBy = req.user.id;
     const { name, description, image, isActive } = req.body;
@@ -43,7 +41,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/', async (req, res) => {
+router.put('/', authentification, async (req, res) => {
   try {
     const { id, ...updateData } = req.body;
     const [affectedRows] = await Activity.update(updateData, {
@@ -55,7 +53,7 @@ router.put('/', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authentification, async (req, res) => {
   try {
     const { id } = req.params;
     const activityDestroy = await Activity.destroy({ where: { id } });
