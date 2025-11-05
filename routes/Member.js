@@ -26,7 +26,7 @@ router.put('/', authentification, async (req, res) => {
   }
 });
 
-router.get('/', authentification, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const members = await Member.findAll();
     res.status(200).json({
