@@ -34,5 +34,5 @@ app.use((req, res) => {
 });
 
 // adapter a la vercel
-// app.listen(port, console.log(`server run in ${port}`));
-module.exports = app;
+app.listen(port, console.log(`server run in ${port}`));
+// module.exports = app;
