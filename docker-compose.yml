@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: acm-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-acm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-acm_password}
+      POSTGRES_DB: ${POSTGRES_DB:-acm_db}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      # Use pg_isready with database name to avoid defaulting to user's database
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-acm_user} -d ${POSTGRES_DB:-acm_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: acm-backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acm_user:acm_password@postgres:5432/acm_db}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      UPLOAD_MAX_SIZE: ${UPLOAD_MAX_SIZE:-5242880}
+    ports:
+      - "3000:3000"
+      - "4983:4983" # Drizzle Studio
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./drizzle.config.ts:/app/drizzle.config.ts
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      # Exclude node_modules from volume mount
+      - /app/node_modules
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
