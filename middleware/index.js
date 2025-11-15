@@ -5,7 +5,9 @@ const SECRET = process.env.SECRET_KEY;
 
 module.exports = Authentification = async (req, res, next) => {
     try {
-        const token = await req.headers['authorization'];
+        // const token = await req.headers['authorization'];
+        const token = await req.headers.authorization?.split(' ')[1] || (req.query.auth) || undefined;
+        
         const { id, email } = jwt.verify(await token, SECRET);
         const user = await User.findOne({ where: { id, email }});
         if (!user ) throw new Error();
