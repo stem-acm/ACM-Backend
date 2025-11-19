@@ -7,6 +7,7 @@ export const createActivitySchema = z.object({
     .max(255, 'Activity name must be less than 255 characters'),
   description: z.string().optional(),
   image: z.string().optional(),
+  emoji: z.string().max(10).optional(),
   //isActive: z.boolean().optional().default(true),
   isPeriodic: z.boolean().default(true),
   dayOfWeek: z.enum(['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']).optional(),

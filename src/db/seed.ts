@@ -98,6 +98,7 @@ async function seed() {
     // Create sample activities
     const activitiesData = [
       {
+        emoji: '💻',
         name: 'Tech Workshop',
         description: 'Hands-on workshop on modern web development technologies',
         isPeriodic: true,
@@ -107,6 +108,7 @@ async function seed() {
         createdBy: adminUser.id,
       },
       {
+        emoji: '👥',
         name: 'Monthly Meeting',
         description: 'Regular monthly organization meeting',
         isPeriodic: true,
@@ -116,6 +118,7 @@ async function seed() {
         createdBy: adminUser.id,
       },
       {
+        emoji: '🤝',
         name: 'Networking Event',
         description: 'Professional networking and social gathering',
         isPeriodic: false,
@@ -126,6 +129,7 @@ async function seed() {
         createdBy: adminUser.id,
       },
       {
+        emoji: '🎓',
         name: 'Training Session',
         description: 'Leadership and communication skills training',
         isPeriodic: false,
@@ -136,6 +140,7 @@ async function seed() {
         createdBy: adminUser.id,
       },
       {
+        emoji: '🎓',
         name: 'Old Event',
         description: 'This event is no longer active',
         isPeriodic: true,
