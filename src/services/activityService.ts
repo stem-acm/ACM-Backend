@@ -79,8 +79,6 @@ export async function updateActivity(id: number, input: UpdateActivityInput) {
     .update(activities)
     .set({
       ...input,
-      startTime: new Date(input.startTime!),
-      endTime: new Date(input.endTime!), 
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id))
