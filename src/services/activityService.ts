@@ -23,24 +23,24 @@ export async function getActivities(query: ActivityQueryInput) {
   const { offset, limit, isActive, sortBy, order } = query;
 
   // Build where conditions
-  const conditions = [];
-  if (isActive !== undefined) {
+ // const conditions = [];
+/*   if (isActive !== undefined) {
     conditions.push(eq(activities.isActive, isActive));
-  }
+  } */
 
   // Get total count
   let countQuery = db.select({ count: sql<number>`count(*)` }).from(activities);
-  if (conditions.length > 0) {
+  /* if (conditions.length > 0) {
     countQuery = countQuery.where(and(...conditions)) as typeof countQuery;
-  }
+  } */
   const totalResult = await countQuery;
   const total = Number(totalResult[0]?.count || 0);
 
   // Build query
   let dataQuery = db.select().from(activities);
-  if (conditions.length > 0) {
+/*   if (conditions.length > 0) {
     dataQuery = dataQuery.where(and(...conditions)) as typeof dataQuery;
-  }
+  } */
 
   // Apply sorting
   const orderBy = order === 'desc' ? desc : asc;
@@ -79,6 +79,8 @@ export async function updateActivity(id: number, input: UpdateActivityInput) {
     .update(activities)
     .set({
       ...input,
+      startTime: new Date(input.startTime!),
+      endTime: new Date(input.endTime!), 
       updatedAt: new Date(),
     })
     .where(eq(activities.id, id))

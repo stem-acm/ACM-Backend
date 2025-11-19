@@ -7,7 +7,13 @@ export const createActivitySchema = z.object({
     .max(255, 'Activity name must be less than 255 characters'),
   description: z.string().optional(),
   image: z.string().optional(),
-  isActive: z.boolean().optional().default(true),
+  //isActive: z.boolean().optional().default(true),
+  isPeriodic: z.boolean().default(true),
+  dayOfWeek: z.enum(['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']).optional(),
+  startTime: z.string().time(),
+  endTime: z.string().time(),
+  startDate: z.string().date().optional(),
+  endDate: z.string().date().optional()
 });
 
 export const updateActivitySchema = createActivitySchema.partial();

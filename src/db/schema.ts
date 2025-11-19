@@ -6,6 +6,7 @@ import {
   pgTable,
   serial,
   text,
+  time,
   timestamp,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -17,6 +18,15 @@ export const occupationEnum = pgEnum('occupation', [
   'employee',
   'entrepreneur',
 ]);
+
+// Day of week enum
+export const dayOfWeekEnum = pgEnum('day_of_week', [
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+]); 
 
 // Users table
 export const users = pgTable('users', {
@@ -52,7 +62,13 @@ export const activities = pgTable('activities', {
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   image: varchar('image', { length: 500 }),
-  isActive: boolean('is_active').notNull().default(true),
+  //isActive: boolean('is_active').notNull().default(true),
+  isPeriodic: boolean('is_periodic').notNull().default(true),
+  dayOfWeek: dayOfWeekEnum('day_of_week'),
+  startTime: time('start_time').notNull(),
+  endTime: time('end_time').notNull(),
+  startDate: date('start_date'),
+  endDate: date('end_date'),
   createdBy: integer('created_by')
     .notNull()
     .references(() => users.id),

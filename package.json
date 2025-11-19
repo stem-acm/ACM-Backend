@@ -21,7 +21,7 @@
     "api-docs": "open-cli http://localhost:3000/api-docs",
     "jwt:generate": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
     "seed": "tsx src/db/seed.ts",
-    "db:seed": "docker-compose exec backend pnpm seed",
+    "db:seed": "docker compose exec backend pnpm seed",
     "prepare": "husky"
   },
   "keywords": [
@@ -35,7 +35,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "drizzle-orm": "^0.44.7",
