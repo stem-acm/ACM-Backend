@@ -20,5 +20,5 @@ jobs:
                   password: ${{ secrets.VPS_PASSWORD }}
                   script: |
                       cd ${{ secrets.PROJECT_FOLDER }}
-                      git reset --hard && git checkout develop && git pull &&  rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
-                      docker compose restart
+                      git reset --hard && git checkout develop && git pull &&  rm -rf node_modules pnpm-lock.yaml && pnpm install
+                      docker compose restart --force-recreate backend
