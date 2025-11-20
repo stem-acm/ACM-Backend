@@ -27,7 +27,8 @@ COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port
-EXPOSE 3000
+EXPOSE ${PORT:-5002}
+EXPOSE ${DRIZZLE_STUDIO_PORT:-4983}
 
 # Set entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
