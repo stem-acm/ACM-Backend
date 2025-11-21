@@ -14,7 +14,7 @@ export const createActivitySchema = z.object({
   startTime: z.string().time(),
   endTime: z.string().time(),
   startDate: z.string().date().optional(),
-  endDate: z.string().date().optional()
+  endDate: z.string().date().optional(),
 });
 
 export const updateActivitySchema = createActivitySchema.partial();

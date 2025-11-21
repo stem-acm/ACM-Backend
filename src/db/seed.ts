@@ -40,7 +40,7 @@ async function seed() {
         studyOrWorkPlace: 'NY University',
         joinDate: '2022-03-10',
         registrationNumber: 'ACMJN-000001',
-        profileImage: "",
+        profileImage: '',
       },
       {
         firstName: 'Emily',
@@ -53,7 +53,7 @@ async function seed() {
         studyOrWorkPlace: 'UCLA',
         joinDate: '2023-01-12',
         registrationNumber: 'ACMJN-000002',
-        profileImage: "",
+        profileImage: '',
       },
       {
         firstName: 'Michael',
@@ -66,7 +66,7 @@ async function seed() {
         studyOrWorkPlace: 'TechCorp',
         joinDate: '2021-11-05',
         registrationNumber: 'ACMJN-000003',
-        profileImage: "",
+        profileImage: '',
       },
       {
         firstName: 'Sarah',
@@ -79,7 +79,7 @@ async function seed() {
         studyOrWorkPlace: 'Houston University',
         joinDate: '2023-06-10',
         registrationNumber: 'ACMJN-000004',
-        profileImage: "",
+        profileImage: '',
       },
     ];
 
@@ -98,7 +98,7 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: "",
+        image: '',
       },
       {
         emoji: '👥',
@@ -109,7 +109,7 @@ async function seed() {
         startTime: '13:00:00',
         endTime: '16:00:00',
         createdBy: adminUser.id,
-        image: "",
+        image: '',
       },
       {
         emoji: '🤝',
@@ -121,7 +121,7 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: "",
+        image: '',
       },
       {
         emoji: '🎓',
@@ -133,7 +133,7 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: "",
+        image: '',
       },
       {
         emoji: '🎓',
@@ -144,7 +144,7 @@ async function seed() {
         startTime: '13:00:00',
         endTime: '16:00:00',
         createdBy: adminUser.id,
-        image: "",
+        image: '',
       },
     ];
 
