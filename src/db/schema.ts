@@ -26,7 +26,7 @@ export const dayOfWeekEnum = pgEnum('day_of_week', [
   'thursday',
   'friday',
   'saturday',
-]); 
+]);
 
 // Users table
 export const users = pgTable('users', {

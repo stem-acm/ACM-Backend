@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins } from '@/db/schema';
 import type {
@@ -20,16 +20,16 @@ export async function createActivity(input: CreateActivityInput, createdBy: numb
 }
 
 export async function getActivities(query: ActivityQueryInput) {
-  const { offset, limit, isActive, sortBy, order } = query;
+  const { offset, limit, sortBy, order } = query;
 
   // Build where conditions
- // const conditions = [];
-/*   if (isActive !== undefined) {
+  // const conditions = [];
+  /*   if (isActive !== undefined) {
     conditions.push(eq(activities.isActive, isActive));
   } */
 
   // Get total count
-  let countQuery = db.select({ count: sql<number>`count(*)` }).from(activities);
+  const countQuery = db.select({ count: sql<number>`count(*)` }).from(activities);
   /* if (conditions.length > 0) {
     countQuery = countQuery.where(and(...conditions)) as typeof countQuery;
   } */
@@ -38,7 +38,7 @@ export async function getActivities(query: ActivityQueryInput) {
 
   // Build query
   let dataQuery = db.select().from(activities);
-/*   if (conditions.length > 0) {
+  /*   if (conditions.length > 0) {
     dataQuery = dataQuery.where(and(...conditions)) as typeof dataQuery;
   } */
 

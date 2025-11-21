@@ -19,7 +19,7 @@ export async function createMember(input: CreateMemberInput) {
   // Update registration number based on ID
   const [updatedMember] = await db
     .update(members)
-    .set({ registrationNumber: newMember.id.toString() })
+    .set({ registrationNumber: `ACMJN-${`${newMember.id.toString()}`.padStart(6, '0')}` })
     .where(eq(members.id, newMember.id))
     .returning();
 

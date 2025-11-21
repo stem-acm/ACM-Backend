@@ -103,12 +103,8 @@
           "name": "activities_created_by_users_id_fk",
           "tableFrom": "activities",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -181,12 +177,8 @@
           "name": "checkins_member_id_members_id_fk",
           "tableFrom": "checkins",
           "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -194,12 +186,8 @@
           "name": "checkins_activity_id_activities_id_fk",
           "tableFrom": "checkins",
           "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["activity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -309,9 +297,7 @@
         "members_registration_number_unique": {
           "name": "members_registration_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "registration_number"
-          ]
+          "columns": ["registration_number"]
         }
       },
       "policies": {},
@@ -368,16 +354,12 @@
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -389,23 +371,12 @@
     "public.day_of_week": {
       "name": "day_of_week",
       "schema": "public",
-      "values": [
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday"
-      ]
+      "values": ["tuesday", "wednesday", "thursday", "friday", "saturday"]
     },
     "public.occupation": {
       "name": "occupation",
       "schema": "public",
-      "values": [
-        "student",
-        "unemployed",
-        "employee",
-        "entrepreneur"
-      ]
+      "values": ["student", "unemployed", "employee", "entrepreneur"]
     }
   },
   "schemas": {},
