@@ -39,7 +39,7 @@ async function seed() {
         phoneNumber: '555-123-4567',
         studyOrWorkPlace: 'NY University',
         joinDate: '2022-03-10',
-        registrationNumber: 'ACMJN-000001',
+        registrationNumber: 'ACM001',
         profileImage: '',
       },
       {
@@ -52,7 +52,7 @@ async function seed() {
         phoneNumber: '555-987-6543',
         studyOrWorkPlace: 'UCLA',
         joinDate: '2023-01-12',
-        registrationNumber: 'ACMJN-000002',
+        registrationNumber: 'ACM002',
         profileImage: '',
       },
       {
@@ -65,7 +65,7 @@ async function seed() {
         phoneNumber: '555-111-2222',
         studyOrWorkPlace: 'TechCorp',
         joinDate: '2021-11-05',
-        registrationNumber: 'ACMJN-000003',
+        registrationNumber: 'ACM003',
         profileImage: '',
       },
       {
@@ -78,7 +78,7 @@ async function seed() {
         phoneNumber: '555-333-4444',
         studyOrWorkPlace: 'Houston University',
         joinDate: '2023-06-10',
-        registrationNumber: 'ACMJN-000004',
+        registrationNumber: 'ACM004',
         profileImage: '',
       },
     ];
