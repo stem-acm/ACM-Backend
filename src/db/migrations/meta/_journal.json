@@ -15,6 +15,13 @@
       "when": 1763562534736,
       "tag": "0001_blushing_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763815085513,
+      "tag": "0002_brief_skrulls",
+      "breakpoints": true
     }
   ]
 }
