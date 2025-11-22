@@ -10,11 +10,11 @@ export const createActivitySchema = z.object({
   emoji: z.string().max(10).optional(),
   //isActive: z.boolean().optional().default(true),
   isPeriodic: z.boolean().default(true),
-  dayOfWeek: z.enum(['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']).optional(),
+  dayOfWeek: z.enum(['tuesday', 'wednesday', 'thursday', 'friday', 'saturday']).nullable(),
   startTime: z.string().time(),
   endTime: z.string().time(),
-  startDate: z.string().date().optional(),
-  endDate: z.string().date().optional(),
+  startDate: z.string().date().nullable(),
+  endDate: z.string().date().nullable(),
 });
 
 export const updateActivitySchema = createActivitySchema.partial();
