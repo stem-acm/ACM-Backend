@@ -25,12 +25,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Uploads
-uploads/
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.pdf
+#uploads/
+#*.jpg
+#*.jpeg
+#*.png
+#*.gif
+#*.pdf
 
 # IDE
 .vscode/
