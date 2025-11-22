@@ -69,9 +69,7 @@ export async function getVolunteers(query: VolunteerQueryInput) {
     );
 
   return {
-    data: {
-        volunteers: volunteersWithMembers,
-    },
+    data: volunteersWithMembers,
     pagination: {
       offset,
       limit,
