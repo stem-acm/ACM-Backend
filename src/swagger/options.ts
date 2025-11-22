@@ -10,7 +10,7 @@ const swaggerOptions: Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: 'http://localhost:5002',
       },
     ],
     components: {
@@ -185,6 +185,43 @@ const swaggerOptions: Options = {
             },
             activity: {
               $ref: '#/components/schemas/Activity',
+            },
+          },
+        },
+        Volunteer: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              example: 1,
+            },
+            memberId: {
+              type: 'integer',
+              example: 1,
+            },
+            joinDate: {
+              type: 'string',
+              format: 'date',
+              example: '2024-01-01',
+            },
+            expirationDate: {
+              type: 'string',
+              format: 'date',
+              example: '2024-01-01',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2024-01-01T00:00:00.000Z',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2024-01-01T00:00:00.000Z',
+            },
+            createdBy: {
+              type: 'integer',
+              example: 1,
             },
           },
         },

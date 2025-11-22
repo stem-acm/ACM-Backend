@@ -93,6 +93,20 @@ export const checkins = pgTable('checkins', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+export const volunteers = pgTable('volunteers', {
+  id: serial('id').primaryKey(),
+  memberId: integer('member_id')
+    .notNull()
+    .references(() => members.id),
+  joinDate: date('join_date'),
+  expirationDate: date('expiration_date'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: integer('created_by')
+    .notNull()
+    .references(() => users.id),
+});
+
 // Type exports for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -105,3 +119,6 @@ export type NewActivity = typeof activities.$inferInsert;
 
 export type Checkin = typeof checkins.$inferSelect;
 export type NewCheckin = typeof checkins.$inferInsert;
+
+export type Volunteer = typeof volunteers.$inferSelect;
+export type NewVolunteer = typeof volunteers.$inferInsert;
