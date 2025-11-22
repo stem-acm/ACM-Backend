@@ -4,8 +4,8 @@ import { volunteerQuerySchema } from '@/schemas/volunteerSchema';
 import {
   createVolunteer,
   deleteVolunteer,
-  getVolunteers,
   getVolunteerById,
+  getVolunteers,
   updateVolunteer,
 } from '@/services/volunteerService';
 

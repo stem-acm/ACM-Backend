@@ -208,7 +208,7 @@ const swaggerOptions: Options = {
               type: 'string',
               format: 'date',
               example: '2024-01-01',
-            },  
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
@@ -224,7 +224,7 @@ const swaggerOptions: Options = {
               example: 1,
             },
           },
-        },  
+        },
         Error: {
           type: 'object',
           properties: {

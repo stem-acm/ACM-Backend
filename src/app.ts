@@ -13,7 +13,7 @@ import checkinRoutes from '@/routes/checkinRoutes';
 import dashboardRoutes from '@/routes/dashboardRoutes';
 import healthRoutes from '@/routes/healthRoutes';
 import memberRoutes from '@/routes/memberRoutes';
-import volunteerRoutes from "@/routes/volunteerRoutes";
+import volunteerRoutes from '@/routes/volunteerRoutes';
 import swaggerOptionsConfig from '@/swagger/options';
 import logger from '@/utils/logger';
 

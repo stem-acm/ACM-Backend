@@ -2,9 +2,9 @@ import { asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { members, volunteers } from '@/db/schema';
 import type {
-  VolunteerQueryInput,
   CreateVolunteerInput,
-  UpdateVolunteerInput,     
+  UpdateVolunteerInput,
+  VolunteerQueryInput,
 } from '@/schemas/volunteerSchema';
 
 export async function createVolunteer(input: CreateVolunteerInput, createdBy: number) {
@@ -12,7 +12,7 @@ export async function createVolunteer(input: CreateVolunteerInput, createdBy: nu
     .insert(volunteers)
     .values({
       ...input,
-      createdBy
+      createdBy,
     })
     .returning();
 
@@ -29,7 +29,7 @@ export async function getVolunteers(query: VolunteerQueryInput) {
 
   // Build query
   let dataQuery = db.select().from(volunteers);
-    
+
   // Apply sorting
   const orderBy = order === 'desc' ? desc : asc;
   switch (sortBy) {
@@ -41,7 +41,7 @@ export async function getVolunteers(query: VolunteerQueryInput) {
       break;
     case 'expirationDate':
       dataQuery = dataQuery.orderBy(orderBy(volunteers.expirationDate)) as typeof dataQuery;
-      break;    
+      break;
     case 'createdAt':
       dataQuery = dataQuery.orderBy(orderBy(volunteers.createdAt)) as typeof dataQuery;
       break;
@@ -52,21 +52,21 @@ export async function getVolunteers(query: VolunteerQueryInput) {
   // Apply pagination
   const data = await dataQuery.limit(limit).offset(offset);
 
-   // Get member details for each volunteer
-    const volunteersWithMembers = await Promise.all(
-      data.map(async (volunteer) => {
-        const [member] = await db
-          .select()
-          .from(members)
-          .where(eq(members.id, volunteer.memberId))
-          .limit(1);
-  
-        return {
-          ...volunteer,
-          Member: member || null
-        };
-      })
-    );
+  // Get member details for each volunteer
+  const volunteersWithMembers = await Promise.all(
+    data.map(async (volunteer) => {
+      const [member] = await db
+        .select()
+        .from(members)
+        .where(eq(members.id, volunteer.memberId))
+        .limit(1);
+
+      return {
+        ...volunteer,
+        Member: member || null,
+      };
+    })
+  );
 
   return {
     data: volunteersWithMembers,
