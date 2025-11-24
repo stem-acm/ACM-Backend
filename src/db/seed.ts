@@ -155,21 +155,21 @@ async function seed() {
     const volunteersData = [
       {
         memberId: insertedMembers[1].id,
-        joinDate: '2025-06-10', 
-        expirationDate: '2026-06-10', 
+        joinDate: '2025-06-10',
+        expirationDate: '2026-06-10',
         createdBy: adminUser.id,
       },
       {
         memberId: insertedMembers[3].id,
-        joinDate: '2025-06-10', 
-        expirationDate: '2026-06-10', 
+        joinDate: '2025-06-10',
+        expirationDate: '2026-06-10',
         createdBy: adminUser.id,
-      }
+      },
     ];
 
     const insertedVolunteers = await db.insert(volunteers).values(volunteersData).returning();
 
-    console.log(`Created ${insertedVolunteers.length} sample volunteers`);  
+    console.log(`Created ${insertedVolunteers.length} sample volunteers`);
 
     // Create sample check-ins with realistic timestamps
     const now = new Date();

@@ -9,7 +9,9 @@ export const createActivitySchema = z.object({
   image: z.string().optional(),
   emoji: z.string().max(10).optional(),
   isPeriodic: z.boolean().default(true),
-  dayOfWeek: z.enum(['everyday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']).nullable(),
+  dayOfWeek: z
+    .enum(['everyday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'])
+    .nullable(),
   startTime: z.string().time(),
   endTime: z.string().time(),
   startDate: z.string().date().nullable(),
