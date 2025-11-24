@@ -21,6 +21,8 @@ export const occupationEnum = pgEnum('occupation', [
 
 // Day of week enum
 export const dayOfWeekEnum = pgEnum('day_of_week', [
+  'everyday',
+  'monday',
   'tuesday',
   'wednesday',
   'thursday',
@@ -63,7 +65,6 @@ export const activities = pgTable('activities', {
   description: text('description'),
   image: varchar('image', { length: 500 }),
   emoji: varchar('emoji', { length: 10 }),
-  //isActive: boolean('is_active').notNull().default(true),
   isPeriodic: boolean('is_periodic').notNull().default(true),
   dayOfWeek: dayOfWeekEnum('day_of_week'),
   startTime: time('start_time').notNull(),

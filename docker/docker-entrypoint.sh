@@ -1,11 +1,11 @@
 #!/bin/sh
 
-echo "Pushing database schema..."
+echo "Running database migrations..."
 
-# Run drizzle-kit push to sync schema
+# Run drizzle-kit migrate to apply migration files
 # Note: docker-compose depends_on with healthcheck ensures PostgreSQL is ready
-if ! pnpm exec drizzle-kit push; then
-  echo "Warning: Failed to push database schema. Continuing anyway..."
+if ! pnpm exec drizzle-kit migrate; then
+  echo "Warning: Failed to run database migrations. Continuing anyway..."
 fi
 
 echo "Starting Drizzle Studio in the background..."
