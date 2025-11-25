@@ -13,6 +13,7 @@ import checkinRoutes from '@/routes/checkinRoutes';
 import dashboardRoutes from '@/routes/dashboardRoutes';
 import healthRoutes from '@/routes/healthRoutes';
 import memberRoutes from '@/routes/memberRoutes';
+import sseRoutes from '@/routes/sseRoutes';
 import volunteerRoutes from '@/routes/volunteerRoutes';
 import swaggerOptionsConfig from '@/swagger/options';
 import logger from '@/utils/logger';
@@ -66,6 +67,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/checkins', checkinRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/volunteers', volunteerRoutes);
+app.use('/api/sse', sseRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
