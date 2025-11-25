@@ -26,6 +26,8 @@ router.get('/checkins', (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
+  logger.info('SSE: New client connected');
+
   // Send initial connection message
   res.write('data: {"type":"connected"}\n\n');
 
@@ -34,7 +36,7 @@ router.get('/checkins', (req: Request, res: Response) => {
     try {
       const data = JSON.stringify({ type: 'new-checkin', data: checkin });
       res.write(`data: ${data}\n\n`);
-      logger.info('SSE: Sent new check-in event to client');
+      logger.info('SSE: Sent new check-in event to client', { checkin });
     } catch (error) {
       logger.error('SSE: Error sending check-in event', error);
     }
@@ -42,11 +44,12 @@ router.get('/checkins', (req: Request, res: Response) => {
 
   // Register the event handler
   checkinEventEmitter.onCheckin(checkinHandler);
+  logger.info('SSE: Registered checkin event handler');
 
   // Handle client disconnect
   req.on('close', () => {
     checkinEventEmitter.removeCheckinListener(checkinHandler);
-    logger.info('SSE: Client disconnected');
+    logger.info('SSE: Client disconnected, removed event handler');
     res.end();
   });
 

@@ -14,6 +14,7 @@ export async function create(req: Request, res: Response): Promise<void> {
     const result = await createCheckin(req.body);
     
     // Emit real-time event for new check-in
+    console.log('Emitting new check-in event:', result);
     checkinEventEmitter.emitCheckin(result);
     
     res.status(201).json({
