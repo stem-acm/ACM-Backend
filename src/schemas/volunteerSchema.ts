@@ -1,13 +1,20 @@
 import { z } from 'zod';
 
-export const createVolunteerSchema = z.object({
+// Base volunteer object schema (without createdBy - that's added server-side)
+const volunteerObjectSchema = z.object({
   memberId: z.number(),
   joinDate: z.string().date().nullable(),
   expirationDate: z.string().date().nullable(),
-  createdBy: z.number(),
 });
 
-export const updateVolunteerSchema = createVolunteerSchema.partial();
+// Schema for creating volunteers (can be array or single object)
+export const createVolunteerSchema = z.union([
+  z.array(volunteerObjectSchema),
+  volunteerObjectSchema,
+]);
+
+// Schema for updating a volunteer (all fields optional)
+export const updateVolunteerSchema = volunteerObjectSchema.partial();
 
 export const volunteerQuerySchema = z.object({
   offset: z
