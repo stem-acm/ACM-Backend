@@ -124,29 +124,52 @@ router.get('/:id', getById);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - memberId
- *             properties:
- *               memberId:
- *                 type: integer
- *                 example: 1
- *                 description: ID of the member to register as volunteer
- *               joinDate:
- *                 type: string
- *                 format: date
- *                 nullable: true
- *                 example: "2025-11-22"
- *                 description: Date when the member joined as volunteer
- *               expirationDate:
- *                 type: string
- *                 format: date
- *                 nullable: true
- *                 example: "2026-11-22"
- *                 description: Date when the volunteer status expires
+ *             oneOf:
+ *               - type: object
+ *                 required:
+ *                   - memberId
+ *                 properties:
+ *                   memberId:
+ *                     type: integer
+ *                     example: 1
+ *                     description: ID of the member to register as volunteer
+ *                   joinDate:
+ *                     type: string
+ *                     format: date
+ *                     nullable: true
+ *                     example: "2025-11-22"
+ *                     description: Date when the member joined as volunteer
+ *                   expirationDate:
+ *                     type: string
+ *                     format: date
+ *                     nullable: true
+ *                     example: "2026-11-22"
+ *                     description: Date when the volunteer status expires
+ *               - type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - memberId
+ *                   properties:
+ *                     memberId:
+ *                       type: integer
+ *                       example: 1
+ *                       description: ID of the member to register as volunteer
+ *                     joinDate:
+ *                       type: string
+ *                       format: date
+ *                       nullable: true
+ *                       example: "2025-11-22"
+ *                       description: Date when the member joined as volunteer
+ *                     expirationDate:
+ *                       type: string
+ *                       format: date
+ *                       nullable: true
+ *                       example: "2026-11-22"
+ *                       description: Date when the volunteer status expires
  *     responses:
  *       201:
- *         description: Volunteer created successfully
+ *         description: Volunteer(s) created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -157,9 +180,13 @@ router.get('/:id', getById);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Volunteer created successfully
+ *                   example: Volunteer(s) created successfully
  *                 data:
- *                   $ref: '#/components/schemas/Volunteer'
+ *                   oneOf:
+ *                     - $ref: '#/components/schemas/Volunteer'
+ *                     - type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Volunteer'
  *       400:
  *         description: Invalid input
  */

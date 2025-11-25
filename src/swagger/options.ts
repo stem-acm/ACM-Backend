@@ -32,7 +32,7 @@ const swaggerOptions: Options = {
             },
             registrationNumber: {
               type: 'string',
-              example: 'MEM-001',
+              example: 'AMCJN-000001',
             },
             firstName: {
               type: 'string',
@@ -118,9 +118,48 @@ const swaggerOptions: Options = {
               nullable: true,
               example: '/uploads/activity.jpg',
             },
-            isActive: {
+            emoji: {
+              type: 'string',
+              nullable: true,
+              example: '🎨',
+            },
+            isPeriodic: {
               type: 'boolean',
               example: true,
+            },
+            dayOfWeek: {
+              type: 'string',
+              enum: [
+                'everyday',
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+                'saturday',
+              ],
+              nullable: true,
+              example: 'friday',
+            },
+            startTime: {
+              type: 'string',
+              example: '14:00:00',
+            },
+            endTime: {
+              type: 'string',
+              example: '16:00:00',
+            },
+            startDate: {
+              type: 'string',
+              format: 'date',
+              nullable: true,
+              example: '2024-01-01',
+            },
+            endDate: {
+              type: 'string',
+              format: 'date',
+              nullable: true,
+              example: '2024-06-01',
             },
             createdBy: {
               type: 'integer',
@@ -180,12 +219,6 @@ const swaggerOptions: Options = {
               format: 'date-time',
               example: '2024-01-01T00:00:00.000Z',
             },
-            member: {
-              $ref: '#/components/schemas/Member',
-            },
-            activity: {
-              $ref: '#/components/schemas/Activity',
-            },
           },
         },
         Volunteer: {
@@ -222,6 +255,9 @@ const swaggerOptions: Options = {
             createdBy: {
               type: 'integer',
               example: 1,
+            },
+            Member: {
+              $ref: '#/components/schemas/Member',
             },
           },
         },
