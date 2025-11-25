@@ -1,4 +1,4 @@
-import type { Request, Response, Router as ExpressRouter } from 'express';
+import type { Router as ExpressRouter, Request, Response } from 'express';
 import { Router } from 'express';
 import checkinEventEmitter from '@/utils/eventEmitter';
 import logger from '@/utils/logger';

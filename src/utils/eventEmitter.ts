@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 class CheckinEventEmitter extends EventEmitter {
   private static instance: CheckinEventEmitter;
