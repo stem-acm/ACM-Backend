@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { checkins, members } from '@/db/schema';
 import type {
@@ -34,9 +34,9 @@ export async function getMembers(query: MemberQueryInput) {
   if (search) {
     conditions.push(
       or(
-        like(members.firstName, `%${search}%`),
-        like(members.lastName, `%${search}%`),
-        like(members.registrationNumber, `%${search}%`)
+        ilike(members.firstName, `%${search}%`),
+        ilike(members.lastName, `%${search}%`),
+        ilike(members.registrationNumber, `%${search}%`)
       )
     );
   }
