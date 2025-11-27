@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
-import { activities, checkins, members, users } from '@/db/schema';
+import { activities, checkins, members, users, volunteers } from '@/db/schema';
 
 async function seed() {
   try {
@@ -151,6 +151,25 @@ async function seed() {
     const insertedActivities = await db.insert(activities).values(activitiesData).returning();
 
     console.log(`Created ${insertedActivities.length} sample activities`);
+
+    const volunteersData = [
+      {
+        memberId: insertedMembers[1].id,
+        joinDate: '2025-06-10',
+        expirationDate: '2026-06-10',
+        createdBy: adminUser.id,
+      },
+      {
+        memberId: insertedMembers[3].id,
+        joinDate: '2025-06-10',
+        expirationDate: '2026-06-10',
+        createdBy: adminUser.id,
+      },
+    ];
+
+    const insertedVolunteers = await db.insert(volunteers).values(volunteersData).returning();
+
+    console.log(`Created ${insertedVolunteers.length} sample volunteers`);
 
     // Create sample check-ins with realistic timestamps
     const now = new Date();
