@@ -39,7 +39,13 @@ export async function createCheckin(input: CreateCheckinInput) {
     })
     .returning();
 
-  return newCheckin;
+  // Return the complete checkin with member and activity details for SSE
+  return {
+    ...newCheckin,
+    registrationNumber: member.registrationNumber,
+    Member: member,
+    Activity: activity,
+  };
 }
 
 export async function getCheckins(query: CheckinQueryInput) {

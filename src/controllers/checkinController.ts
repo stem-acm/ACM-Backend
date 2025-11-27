@@ -7,10 +7,16 @@ import {
   getCheckins,
   getCheckinsByRegistrationNumber,
 } from '@/services/checkinService';
+import checkinEventEmitter from '@/utils/eventEmitter';
 
 export async function create(req: Request, res: Response): Promise<void> {
   try {
     const result = await createCheckin(req.body);
+
+    // Emit real-time event for new check-in
+    console.log('Emitting new check-in event:', result);
+    checkinEventEmitter.emitCheckin(result);
+
     res.status(201).json({
       success: true,
       message: 'Checkin created successfully',
