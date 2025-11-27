@@ -8,15 +8,31 @@ import type {
 } from '@/schemas/volunteerSchema';
 
 export async function createVolunteer(input: CreateVolunteerInput, createdBy: number) {
-  const [newVolunteer] = await db
-    .insert(volunteers)
-    .values({
-      ...input,
+  if (Array.isArray(input)) {
+    const allVolunteers: Array<{
+      memberId: number;
+      joinDate: string | null;
+      expirationDate: string | null;
+      createdBy: number;
+    }> = input.map((volunteer) => ({
+      ...volunteer,
       createdBy,
-    })
-    .returning();
+    }));
 
-  return newVolunteer;
+    const newVolunteers = await db.insert(volunteers).values(allVolunteers).returning();
+
+    return newVolunteers;
+  } else {
+    const [newVolunteer] = await db
+      .insert(volunteers)
+      .values({
+        ...input,
+        createdBy,
+      })
+      .returning();
+
+    return newVolunteer;
+  }
 }
 
 export async function getVolunteers(query: VolunteerQueryInput) {
