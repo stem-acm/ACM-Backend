@@ -1,10 +1,17 @@
+CREATE TYPE "public"."day_of_week" AS ENUM('everyday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday');--> statement-breakpoint
 CREATE TYPE "public"."occupation" AS ENUM('student', 'unemployed', 'employee', 'entrepreneur');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"description" text,
 	"image" varchar(500),
-	"is_active" boolean DEFAULT true NOT NULL,
+	"emoji" varchar(10),
+	"is_periodic" boolean DEFAULT true NOT NULL,
+	"day_of_week" "day_of_week",
+	"start_time" time NOT NULL,
+	"end_time" time NOT NULL,
+	"start_date" date,
+	"end_date" date,
 	"created_by" integer NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -50,6 +57,18 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
+CREATE TABLE "volunteers" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"member_id" integer NOT NULL,
+	"join_date" date,
+	"expiration_date" date,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"created_by" integer NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "activities" ADD CONSTRAINT "activities_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "checkins" ADD CONSTRAINT "checkins_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "checkins" ADD CONSTRAINT "checkins_activity_id_activities_id_fk" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "checkins" ADD CONSTRAINT "checkins_activity_id_activities_id_fk" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "volunteers" ADD CONSTRAINT "volunteers_member_id_members_id_fk" FOREIGN KEY ("member_id") REFERENCES "public"."members"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "volunteers" ADD CONSTRAINT "volunteers_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;

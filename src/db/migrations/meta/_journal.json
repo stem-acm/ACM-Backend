@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1762686962731,
-      "tag": "0000_lame_morg",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1763562534736,
-      "tag": "0001_blushing_mesmero",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1763815085513,
-      "tag": "0002_brief_skrulls",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1763968700125,
-      "tag": "0003_bent_grim_reaper",
+      "when": 1764925981007,
+      "tag": "0000_yellow_gertrude_yorkes",
       "breakpoints": true
     }
   ]

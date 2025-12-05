@@ -6,8 +6,8 @@ WORKDIR /app
 # Install build dependencies for native modules (bcrypt)
 RUN apk add --no-cache python3 make g++
 
-# Install pnpm (matching package.json packageManager version)
-RUN npm install -g pnpm@10.20.0
+# Enable Corepack and install pnpm (matching package.json packageManager version)
+RUN corepack enable && corepack prepare pnpm@10.20.0 --activate
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
