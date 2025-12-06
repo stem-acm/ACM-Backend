@@ -7,7 +7,7 @@ import {
   getCheckins,
   getCheckinsByRegistrationNumber,
 } from '@/services/checkinService';
-import checkinEventEmitter from '@/utils/eventEmitter';
+import eventEmitter from '@/utils/eventEmitter';
 
 export async function create(req: Request, res: Response): Promise<void> {
   try {
@@ -15,7 +15,7 @@ export async function create(req: Request, res: Response): Promise<void> {
 
     // Emit real-time event for new check-in
     console.log('Emitting new check-in event:', result);
-    checkinEventEmitter.emitCheckin(result);
+    eventEmitter.checkinEmitter.emitCheckin(result);
 
     res.status(201).json({
       success: true,

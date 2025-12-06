@@ -8,6 +8,7 @@ import {
   getActivityById,
   updateActivity,
 } from '@/services/activityService';
+import eventEmitter from '@/utils/eventEmitter';
 
 export async function create(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -21,6 +22,9 @@ export async function create(req: AuthRequest, res: Response): Promise<void> {
     }
 
     const result = await createActivity(req.body, req.user.id);
+
+    eventEmitter.activityEmitter.emitActivity(result);
+
     res.status(201).json({
       success: true,
       message: 'Activity created successfully',

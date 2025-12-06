@@ -42,6 +42,7 @@ export const activityQuerySchema = z.object({
     }),
   sortBy: z.enum(['id', 'name', 'createdAt']).optional().default('id'),
   order: z.enum(['asc', 'desc']).optional().default('asc'),
+  search: z.string().optional(),
 });
 
 export type CreateActivityInput = z.infer<typeof createActivitySchema>;
