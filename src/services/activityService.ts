@@ -1,4 +1,4 @@
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins } from '@/db/schema';
 import type {
@@ -20,27 +20,27 @@ export async function createActivity(input: CreateActivityInput, createdBy: numb
 }
 
 export async function getActivities(query: ActivityQueryInput) {
-  const { offset, limit, sortBy, order } = query;
+  const { offset, limit, sortBy, order, search } = query;
 
   // Build where conditions
-  // const conditions = [];
-  /*   if (isActive !== undefined) {
-    conditions.push(eq(activities.isActive, isActive));
-  } */
+  const conditions = [];
+  if (search) {
+    conditions.push(or(ilike(activities.name, `%${search}%`)));
+  }
 
   // Get total count
-  const countQuery = db.select({ count: sql<number>`count(*)` }).from(activities);
-  /* if (conditions.length > 0) {
+  let countQuery = db.select({ count: sql<number>`count(*)` }).from(activities);
+  if (conditions.length > 0) {
     countQuery = countQuery.where(and(...conditions)) as typeof countQuery;
-  } */
+  }
   const totalResult = await countQuery;
   const total = Number(totalResult[0]?.count || 0);
 
   // Build query
   let dataQuery = db.select().from(activities);
-  /*   if (conditions.length > 0) {
+  if (conditions.length > 0) {
     dataQuery = dataQuery.where(and(...conditions)) as typeof dataQuery;
-  } */
+  }
 
   // Apply sorting
   const orderBy = order === 'desc' ? desc : asc;

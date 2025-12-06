@@ -193,7 +193,7 @@ async function seed() {
         memberId: insertedMembers[1].id,
         activityId: insertedActivities[0].id,
         checkInTime: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
-        checkOutTime: null,
+        checkOutTime: new Date(now.getTime() + 5 * 60 * 1000),
         visitReason: 'Learning new technologies',
       },
       {
