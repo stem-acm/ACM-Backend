@@ -5,7 +5,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { config } from '@/config';
 import { errorHandler, notFoundHandler } from '@/middlewares/errorHandler';
-import { generalRateLimiter } from '@/middlewares/rateLimiter';
+// import { generalRateLimiter } from '@/middlewares/rateLimiter';
 import activityRoutes from '@/routes/activityRoutes';
 // Routes
 import authRoutes from '@/routes/authRoutes';
@@ -26,7 +26,8 @@ app.set('trust proxy', 1);
 // CORS configuration
 app.use(
   cors({
-    origin: config.nodeEnv === 'development' ? true : config.cors.allowedOrigins,
+    origin:
+      config.nodeEnv === 'development' ? true : config.cors.allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -52,7 +53,7 @@ app.use((req, _, next) => {
 });
 
 // Rate limiting
-app.use(generalRateLimiter);
+// app.use(generalRateLimiter);
 
 // Static file serving
 app.use('/uploads', express.static('uploads'));
