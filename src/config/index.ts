@@ -32,7 +32,7 @@ const configSchema = z.object({
   }),
   rateLimit: z.object({
     windowMs: z.number().default(15 * 60 * 1000), // 15 minutes
-    max: z.number().int().positive().default(100),
+    max: z.number().int().positive().default(1000),
   }),
 });
 
@@ -59,7 +59,7 @@ function loadConfig(): Config {
     },
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+      max: env.MAX_REQUEST_LIMIT, // limit each IP to MAX_REQUEST_LIMIT requests per windowMs
     },
   };
 
