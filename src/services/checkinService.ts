@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins, members } from '@/db/schema';
 import type { CheckinQueryInput, CreateCheckinInput } from '@/schemas/checkinSchema';
+import { getCheckinSlot, validateCheckinTime } from '@/utils/checkinUtils';
 
 export async function createCheckin(input: CreateCheckinInput) {
   // Find member by registration number
@@ -27,6 +28,49 @@ export async function createCheckin(input: CreateCheckinInput) {
   }
 
   const checkInTime = input.checkInTime ? new Date(input.checkInTime) : new Date();
+
+  // Validate check-in time
+  const validation = validateCheckinTime(checkInTime);
+  if (!validation.allowed) {
+    throw new Error(validation.reason);
+  }
+
+  // Check for duplicate scan in the same slot
+  const currentSlot = getCheckinSlot(checkInTime);
+  if (currentSlot) {
+    const startOfSlot = new Date(checkInTime);
+    const endOfSlot = new Date(checkInTime);
+
+    // Set time range based on slot type to be safe covering the whole slot
+    // For simplicity, we can just check if any checkin exists for this member 
+    // where getCheckinSlot(checkin.checkInTime) === currentSlot && checkin.checkInTime is on the same day
+    
+    // Actually, a simpler and more robust way is to query checkins for today 
+    // and see if any match the slot.
+    
+    // We already have the current slot. Let's find checkins for this member today.
+    const startOfDay = new Date(checkInTime);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(checkInTime);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todaysCheckins = await db
+      .select()
+      .from(checkins)
+      .where(
+        and(
+          eq(checkins.memberId, member.id),
+          gte(checkins.checkInTime, startOfDay),
+          lte(checkins.checkInTime, endOfDay)
+        )
+      );
+
+    for (const checkin of todaysCheckins) {
+      if (getCheckinSlot(checkin.checkInTime) === currentSlot) {
+        throw new Error('Already scanned for this half day');
+      }
+    }
+  }
 
   const [newCheckin] = await db
     .insert(checkins)
