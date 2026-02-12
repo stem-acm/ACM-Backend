@@ -7,8 +7,15 @@ export interface CheckinValidationResult {
 export type CheckinSlot = 'TUE_AM' | 'TUE_PM' | 'WED_AM' | 'WED_PM' | 'THU_AM' | 'THU_PM' | 'FRI_AM' | 'FRI_PM' | 'SAT';
 
 export function getCheckinSlot(date: Date): CheckinSlot | null {
-  const day = date.getDay(); // 0 is Sunday
-  const hours = date.getHours();
+  // Convert to EAT (UTC+3) for validation, assuming server might be in UTC
+  // We create a new date shifted by 3 hours to simulate local time
+  // valid only if the input 'date' is effectively UTC when getHours() is called (which is true for Date objects in Node if system is UTC)
+  // A more robust way is to use toLocaleString with timeZone option
+  const eatDateString = date.toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+  const eatDate = new Date(eatDateString);
+
+  const day = eatDate.getDay(); // 0 is Sunday
+  const hours = eatDate.getHours();
 
   // Monday (1) and Sunday (0) are not allowed
   if (day === 0 || day === 1) {
@@ -41,7 +48,10 @@ export function getCheckinSlot(date: Date): CheckinSlot | null {
 }
 
 export function validateCheckinTime(date: Date): CheckinValidationResult {
-  const day = date.getDay();
+  // Also convert here to get the correct day for the error message/logic
+  const eatDateString = date.toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
+  const eatDate = new Date(eatDateString);
+  const day = eatDate.getDay();
 
   if (day === 0 || day === 1) {
     return {
