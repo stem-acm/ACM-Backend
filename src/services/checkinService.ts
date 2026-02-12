@@ -38,16 +38,13 @@ export async function createCheckin(input: CreateCheckinInput) {
   // Check for duplicate scan in the same slot
   const currentSlot = getCheckinSlot(checkInTime);
   if (currentSlot) {
-    const startOfSlot = new Date(checkInTime);
-    const endOfSlot = new Date(checkInTime);
-
     // Set time range based on slot type to be safe covering the whole slot
-    // For simplicity, we can just check if any checkin exists for this member 
+    // For simplicity, we can just check if any checkin exists for this member
     // where getCheckinSlot(checkin.checkInTime) === currentSlot && checkin.checkInTime is on the same day
-    
-    // Actually, a simpler and more robust way is to query checkins for today 
+
+    // Actually, a simpler and more robust way is to query checkins for today
     // and see if any match the slot.
-    
+
     // We already have the current slot. Let's find checkins for this member today.
     const startOfDay = new Date(checkInTime);
     startOfDay.setHours(0, 0, 0, 0);

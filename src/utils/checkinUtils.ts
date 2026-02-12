@@ -4,7 +4,16 @@ export interface CheckinValidationResult {
   slot?: CheckinSlot;
 }
 
-export type CheckinSlot = 'TUE_AM' | 'TUE_PM' | 'WED_AM' | 'WED_PM' | 'THU_AM' | 'THU_PM' | 'FRI_AM' | 'FRI_PM' | 'SAT';
+export type CheckinSlot =
+  | 'TUE_AM'
+  | 'TUE_PM'
+  | 'WED_AM'
+  | 'WED_PM'
+  | 'THU_AM'
+  | 'THU_PM'
+  | 'FRI_AM'
+  | 'FRI_PM'
+  | 'SAT';
 
 export function getCheckinSlot(date: Date): CheckinSlot | null {
   // Convert to EAT (UTC+3) for validation, assuming server might be in UTC
@@ -61,7 +70,7 @@ export function validateCheckinTime(date: Date): CheckinValidationResult {
   }
 
   const slot = getCheckinSlot(date);
-  
+
   if (!slot) {
     if (day === 6) {
       return {
