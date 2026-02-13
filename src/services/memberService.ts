@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
-import { checkins, members } from '@/db/schema';
+import { checkins, members, volunteers } from '@/db/schema';
 import type {
   CreateMemberInput,
   MemberQueryInput,
@@ -117,12 +117,11 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
 }
 
 export async function deleteMember(id: number) {
-  // Check if member has associated check-ins
-  const [checkin] = await db.select().from(checkins).where(eq(checkins.memberId, id)).limit(1);
+  // Delete associated check-ins
+  await db.delete(checkins).where(eq(checkins.memberId, id));
 
-  if (checkin) {
-    throw new Error('Cannot delete member with associated check-ins');
-  }
+  // Delete associated volunteer records
+  await db.delete(volunteers).where(eq(volunteers.memberId, id));
 
   const [deletedMember] = await db.delete(members).where(eq(members.id, id)).returning();
 
