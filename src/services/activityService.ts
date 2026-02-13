@@ -92,12 +92,8 @@ export async function updateActivity(id: number, input: UpdateActivityInput) {
 }
 
 export async function deleteActivity(id: number) {
-  // Check if activity has associated check-ins
-  const [checkin] = await db.select().from(checkins).where(eq(checkins.activityId, id)).limit(1);
-
-  if (checkin) {
-    throw new Error('Cannot delete activity with associated check-ins');
-  }
+  // Delete associated check-ins
+  await db.delete(checkins).where(eq(checkins.activityId, id));
 
   const [deletedActivity] = await db.delete(activities).where(eq(activities.id, id)).returning();
 
