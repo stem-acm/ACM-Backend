@@ -219,6 +219,12 @@ const swaggerOptions: Options = {
               format: 'date-time',
               example: '2024-01-01T00:00:00.000Z',
             },
+            Member: {
+              $ref: '#/components/schemas/Member',
+            },
+            Activity: {
+              $ref: '#/components/schemas/Activity',
+            },
           },
         },
         Volunteer: {
