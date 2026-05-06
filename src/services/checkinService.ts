@@ -152,8 +152,31 @@ export async function getCheckins(query: CheckinQueryInput) {
   // Apply pagination
   const data = await sortedQuery.limit(limit).offset(offset);
 
+  // Get member and activity details for each checkin
+  const checkinsWithMembersAndActivities = await Promise.all(
+    data.map(async (checkins) => {
+      const [member] = await db
+        .select()
+        .from(members)
+        .where(eq(members.id, checkins.memberId))
+        .limit(1);
+
+      const [activity] = await db
+        .select()
+        .from(activities)
+        .where(eq(activities.id, checkins.activityId))
+        .limit(1);
+
+      return {
+        ...checkins,
+        Member: member || null,
+        Activity: activity || null,
+      };
+    })
+  );
+
   return {
-    data,
+    data: checkinsWithMembersAndActivities,
     pagination: {
       offset,
       limit,
