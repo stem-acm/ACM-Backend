@@ -7,7 +7,7 @@ const isoDateTimeSchema = z
 
 export const createCheckinSchema = z
   .object({
-    registrationNumber: z.string().min(1, 'Registration number is required'),
+    registrationNumber: z.number(),
     activityId: z.number().int().positive('Activity ID must be a positive integer'),
     checkInTime: isoDateTimeSchema,
     checkOutTime: isoDateTimeSchema,

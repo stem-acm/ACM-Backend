@@ -56,7 +56,7 @@ export async function createCheckin(input: CreateCheckinInput) {
       .from(checkins)
       .where(
         and(
-          eq(checkins.memberId, member.id),
+          eq(checkins.registrationNumber, member.registrationNumber),
           gte(checkins.checkInTime, startOfDay),
           lte(checkins.checkInTime, endOfDay)
         )
@@ -72,7 +72,7 @@ export async function createCheckin(input: CreateCheckinInput) {
   const [newCheckin] = await db
     .insert(checkins)
     .values({
-      memberId: member.id,
+      registrationNumber: member.registrationNumber,
       activityId: input.activityId,
       checkInTime,
       checkOutTime: input.checkOutTime ? new Date(input.checkOutTime) : undefined,
@@ -95,7 +95,7 @@ export async function getCheckins(query: CheckinQueryInput) {
   let queryBuilder = db
     .select({
       id: checkins.id,
-      memberId: checkins.memberId,
+      registrationNumber: checkins.registrationNumber,
       activityId: checkins.activityId,
       checkInTime: checkins.checkInTime,
       checkOutTime: checkins.checkOutTime,
@@ -108,7 +108,7 @@ export async function getCheckins(query: CheckinQueryInput) {
   // Apply filters
   const conditions = [];
   if (memberId) {
-    conditions.push(eq(checkins.memberId, memberId));
+    conditions.push(eq(checkins.registrationNumber, memberId));
   }
   if (activityId) {
     conditions.push(eq(checkins.activityId, activityId));
@@ -158,7 +158,7 @@ export async function getCheckins(query: CheckinQueryInput) {
       const [member] = await db
         .select()
         .from(members)
-        .where(eq(members.id, checkins.memberId))
+        .where(eq(members.registrationNumber, checkins.registrationNumber))
         .limit(1);
 
       const [activity] = await db
@@ -190,18 +190,23 @@ export async function getCheckinsByRegistrationNumber(
   registrationNumber: string,
   query: Omit<CheckinQueryInput, 'memberId'>
 ) {
+  const parsedRegNum = Number.parseInt(registrationNumber, 10);
+  if (Number.isNaN(parsedRegNum)) {
+    throw new Error('Invalid registration number');
+  }
+
   // Find member by registration number
   const [member] = await db
     .select()
     .from(members)
-    .where(eq(members.registrationNumber, registrationNumber))
+    .where(eq(members.registrationNumber, parsedRegNum))
     .limit(1);
 
   if (!member) {
     throw new Error('Member not found');
   }
 
-  return getCheckins({ ...query, memberId: member.id });
+  return getCheckins({ ...query, memberId: member.registrationNumber });
 }
 
 export async function getCheckinById(id: number) {

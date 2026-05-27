@@ -10,20 +10,10 @@ import type {
 export async function createMember(input: CreateMemberInput) {
   const [newMember] = await db
     .insert(members)
-    .values({
-      ...input,
-      registrationNumber: '', // Will be updated after insert
-    })
+    .values(input)
     .returning();
 
-  // Update registration number based on ID
-  const [updatedMember] = await db
-    .update(members)
-    .set({ registrationNumber: `ACMJN-${`${newMember.id.toString()}`.padStart(6, '0')}` })
-    .where(eq(members.id, newMember.id))
-    .returning();
-
-  return updatedMember;
+  return newMember;
 }
 
 export async function getMembers(query: MemberQueryInput) {
@@ -36,7 +26,7 @@ export async function getMembers(query: MemberQueryInput) {
       or(
         ilike(members.firstName, `%${search}%`),
         ilike(members.lastName, `%${search}%`),
-        ilike(members.registrationNumber, `%${search}%`)
+        ilike(sql<string>`cast(${members.registrationNumber} as text)`, `%${search}%`)
       )
     );
   }
@@ -68,7 +58,7 @@ export async function getMembers(query: MemberQueryInput) {
       dataQuery = dataQuery.orderBy(orderBy(members.joinDate)) as typeof dataQuery;
       break;
     default:
-      dataQuery = dataQuery.orderBy(orderBy(members.id)) as typeof dataQuery;
+      dataQuery = dataQuery.orderBy(orderBy(members.registrationNumber)) as typeof dataQuery;
   }
 
   // Apply pagination
@@ -86,15 +76,19 @@ export async function getMembers(query: MemberQueryInput) {
 }
 
 export async function getMemberById(id: number) {
-  const [member] = await db.select().from(members).where(eq(members.id, id)).limit(1);
+  const [member] = await db.select().from(members).where(eq(members.registrationNumber, id)).limit(1);
   return member || null;
 }
 
 export async function getMemberByRegistrationNumber(registrationNumber: string) {
+  const parsedRegNum = Number.parseInt(registrationNumber, 10);
+  if (Number.isNaN(parsedRegNum)) {
+    return null;
+  }
   const [member] = await db
     .select()
     .from(members)
-    .where(eq(members.registrationNumber, registrationNumber))
+    .where(eq(members.registrationNumber, parsedRegNum))
     .limit(1);
   return member || null;
 }
@@ -106,7 +100,7 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
       ...input,
       updatedAt: new Date(),
     })
-    .where(eq(members.id, id))
+    .where(eq(members.registrationNumber, id))
     .returning();
 
   if (!updatedMember) {
@@ -118,12 +112,12 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
 
 export async function deleteMember(id: number) {
   // Delete associated check-ins
-  await db.delete(checkins).where(eq(checkins.memberId, id));
+  await db.delete(checkins).where(eq(checkins.registrationNumber, id));
 
   // Delete associated volunteer records
-  await db.delete(volunteers).where(eq(volunteers.memberId, id));
+  await db.delete(volunteers).where(eq(volunteers.registrationNumber, id));
 
-  const [deletedMember] = await db.delete(members).where(eq(members.id, id)).returning();
+  const [deletedMember] = await db.delete(members).where(eq(members.registrationNumber, id)).returning();
 
   if (!deletedMember) {
     throw new Error('Member not found');

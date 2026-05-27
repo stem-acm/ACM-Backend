@@ -39,7 +39,7 @@ async function seed() {
         phoneNumber: '555-123-4567',
         studyOrWorkPlace: 'NY University',
         joinDate: '2022-03-10',
-        registrationNumber: 'ACM001',
+        registrationNumber: 1,
         profileImage: '',
       },
       {
@@ -52,7 +52,7 @@ async function seed() {
         phoneNumber: '555-987-6543',
         studyOrWorkPlace: 'UCLA',
         joinDate: '2023-01-12',
-        registrationNumber: 'ACM002',
+        registrationNumber: 2,
         profileImage: '',
       },
       {
@@ -65,7 +65,7 @@ async function seed() {
         phoneNumber: '555-111-2222',
         studyOrWorkPlace: 'TechCorp',
         joinDate: '2021-11-05',
-        registrationNumber: 'ACM003',
+        registrationNumber: 3,
         profileImage: '',
       },
       {
@@ -78,7 +78,7 @@ async function seed() {
         phoneNumber: '555-333-4444',
         studyOrWorkPlace: 'Houston University',
         joinDate: '2023-06-10',
-        registrationNumber: 'ACM004',
+        registrationNumber: 4,
         profileImage: '',
       },
     ];
@@ -154,13 +154,13 @@ async function seed() {
 
     const volunteersData = [
       {
-        memberId: insertedMembers[1].id,
+        registrationNumber: insertedMembers[1].registrationNumber,
         joinDate: '2025-06-10',
         expirationDate: '2026-06-10',
         createdBy: adminUser.id,
       },
       {
-        memberId: insertedMembers[3].id,
+        registrationNumber: insertedMembers[3].registrationNumber,
         joinDate: '2025-06-10',
         expirationDate: '2026-06-10',
         createdBy: adminUser.id,
@@ -183,21 +183,21 @@ async function seed() {
     const checkinsData = [
       // Today's check-ins (some with check-out)
       {
-        memberId: insertedMembers[0].id,
+        registrationNumber: insertedMembers[0].registrationNumber,
         activityId: insertedActivities[0].id,
         checkInTime: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
         checkOutTime: new Date(now.getTime() - 30 * 60 * 1000), // 30 minutes ago
         visitReason: 'Attending tech workshop',
       },
       {
-        memberId: insertedMembers[1].id,
+        registrationNumber: insertedMembers[1].registrationNumber,
         activityId: insertedActivities[0].id,
         checkInTime: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
         checkOutTime: new Date(now.getTime() + 5 * 60 * 1000),
         visitReason: 'Learning new technologies',
       },
       {
-        memberId: insertedMembers[2].id,
+        registrationNumber: insertedMembers[2].registrationNumber,
         activityId: insertedActivities[1].id,
         checkInTime: new Date(now.getTime() - 3 * 60 * 60 * 1000), // 3 hours ago
         checkOutTime: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
@@ -205,7 +205,7 @@ async function seed() {
       },
       // Yesterday's check-ins
       {
-        memberId: insertedMembers[3].id,
+        registrationNumber: insertedMembers[3].registrationNumber,
         activityId: insertedActivities[2].id,
         checkInTime: new Date(yesterday.getTime() - 2 * 60 * 60 * 1000),
         checkOutTime: new Date(yesterday.getTime() - 30 * 60 * 1000),
@@ -213,14 +213,14 @@ async function seed() {
       },
       // Last week's check-ins
       {
-        memberId: insertedMembers[0].id,
+        registrationNumber: insertedMembers[0].registrationNumber,
         activityId: insertedActivities[1].id,
         checkInTime: new Date(lastWeek.getTime() - 2 * 60 * 60 * 1000),
         checkOutTime: new Date(lastWeek.getTime() - 1 * 60 * 60 * 1000),
         visitReason: 'Monthly meeting attendance',
       },
       {
-        memberId: insertedMembers[1].id,
+        registrationNumber: insertedMembers[1].registrationNumber,
         activityId: insertedActivities[2].id,
         checkInTime: new Date(lastWeek.getTime() - 3 * 60 * 60 * 1000),
         checkOutTime: null,
@@ -228,7 +228,7 @@ async function seed() {
       },
       // Two weeks ago
       {
-        memberId: insertedMembers[2].id,
+        registrationNumber: insertedMembers[2].registrationNumber,
         activityId: insertedActivities[0].id,
         checkInTime: new Date(twoWeeksAgo.getTime() - 2 * 60 * 60 * 1000),
         checkOutTime: new Date(twoWeeksAgo.getTime() - 30 * 60 * 1000),

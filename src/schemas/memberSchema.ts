@@ -25,15 +25,17 @@ const pastDateSchema = dateSchema.refine(
 
 export const createMemberSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  birthDate: pastDateSchema.optional(),
-  birthPlace: z.string().optional(),
-  address: z.string().optional(),
-  occupation: occupationEnum.optional(),
-  phoneNumber: z.string().optional(),
-  studyOrWorkPlace: z.string().optional(),
-  joinDate: dateSchema.optional(),
-  profileImage: z.string().optional(),
+  lastName: z.string().nullable(),
+  title: z.enum(['Miss', 'Mr', 'Mrs']).nullable(),
+  gender: z.enum(['male', 'female']).nullable(),
+  birthDate: pastDateSchema.nullable(),
+  birthPlace: z.string().nullable(),
+  address: z.string().nullable(),
+  occupation: occupationEnum.nullable(),
+  phoneNumber: z.string().nullable(),
+  studyOrWorkPlace: z.string().nullable(),
+  joinDate: dateSchema.nullable(),
+  profileImage: z.string().nullable(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial();

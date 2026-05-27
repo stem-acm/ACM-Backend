@@ -10,8 +10,9 @@ import type {
 export async function createVolunteer(input: CreateVolunteerInput, createdBy: number) {
   if (Array.isArray(input)) {
     const allVolunteers: Array<{
-      memberId: number;
+      registrationNumber: number | null;
       joinDate: string | null;
+      role: string | null;
       expirationDate: string | null;
       createdBy: number;
     }> = input.map((volunteer) => ({
@@ -49,8 +50,8 @@ export async function getVolunteers(query: VolunteerQueryInput) {
   // Apply sorting
   const orderBy = order === 'desc' ? desc : asc;
   switch (sortBy) {
-    case 'memberId':
-      dataQuery = dataQuery.orderBy(orderBy(volunteers.memberId)) as typeof dataQuery;
+    case 'registrationNumber':
+      dataQuery = dataQuery.orderBy(orderBy(volunteers.registrationNumber)) as typeof dataQuery;
       break;
     case 'joinDate':
       dataQuery = dataQuery.orderBy(orderBy(volunteers.joinDate)) as typeof dataQuery;
@@ -71,15 +72,19 @@ export async function getVolunteers(query: VolunteerQueryInput) {
   // Get member details for each volunteer
   const volunteersWithMembers = await Promise.all(
     data.map(async (volunteer) => {
-      const [member] = await db
-        .select()
-        .from(members)
-        .where(eq(members.id, volunteer.memberId))
-        .limit(1);
+      let member = null;
+      if (volunteer.registrationNumber !== null) {
+        const [foundMember] = await db
+          .select()
+          .from(members)
+          .where(eq(members.registrationNumber, volunteer.registrationNumber))
+          .limit(1);
+        member = foundMember || null;
+      }
 
       return {
         ...volunteer,
-        Member: member || null,
+        Member: member,
       };
     })
   );
@@ -106,7 +111,7 @@ export async function updateVolunteer(id: number, input: UpdateVolunteerInput) {
     updatedAt: new Date(),
   };
 
-  if (input.memberId !== undefined) updateData.memberId = input.memberId;
+  if (input.registrationNumber !== undefined) updateData.registrationNumber = input.registrationNumber;
   if (input.joinDate !== undefined) updateData.joinDate = input.joinDate;
   if (input.expirationDate !== undefined) updateData.expirationDate = input.expirationDate;
 
