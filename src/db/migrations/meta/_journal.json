@@ -15,6 +15,13 @@
       "when": 1779867346446,
       "tag": "0001_hesitant_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780069468191,
+      "tag": "0002_damp_naoko",
+      "breakpoints": true
     }
   ]
 }
