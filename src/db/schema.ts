@@ -9,100 +9,110 @@ import {
   time,
   timestamp,
   varchar,
-} from 'drizzle-orm/pg-core';
+} from "drizzle-orm/pg-core";
+import { title } from "node:process";
 
 // Occupation enum
-export const occupationEnum = pgEnum('occupation', [
-  'student',
-  'unemployed',
-  'employee',
-  'entrepreneur',
+export const occupationEnum = pgEnum("occupation", [
+  "student",
+  "unemployed",
+  "employee",
+  "entrepreneur",
 ]);
 
 // Day of week enum
-export const dayOfWeekEnum = pgEnum('day_of_week', [
-  'everyday',
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
+export const dayOfWeekEnum = pgEnum("day_of_week", [
+  "everyday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
 ]);
 
+// Title enum
+export const titleEnum = pgEnum("title", ["Miss", "Mr", "Mrs"]);
+
+// Gender enum
+export const genderEnum = pgEnum("gender", ["male", "female"]);
+
 // Users table
-export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  username: varchar('username', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }).notNull(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  password: varchar("password", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Members table
-export const members = pgTable('members', {
-  registrationNumber: serial('registration_number').primaryKey(),
-  firstName: varchar('first_name', { length: 255 }).notNull(),
-  lastName: varchar('last_name', { length: 255 }),
-  birthDate: date('birth_date'),
-  birthPlace: varchar('birth_place', { length: 255 }),
-  address: text('address'),
-  occupation: occupationEnum('occupation'),
-  phoneNumber: varchar('phone_number', { length: 255 }),
-  studyOrWorkPlace: varchar('study_or_work_place', { length: 255 }),
-  joinDate: date('join_date'),
-  profileImage: varchar('profile_image', { length: 500 }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+export const members = pgTable("members", {
+  registrationNumber: serial("registration_number").primaryKey(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }),
+  title: titleEnum("title"),
+  gender: genderEnum("gender"),
+  birthDate: date("birth_date"),
+  birthPlace: varchar("birth_place", { length: 255 }),
+  address: text("address"),
+  occupation: occupationEnum("occupation"),
+  phoneNumber: varchar("phone_number", { length: 255 }),
+  studyOrWorkPlace: varchar("study_or_work_place", { length: 255 }),
+  joinDate: date("join_date"),
+  profileImage: varchar("profile_image", { length: 500 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Activities table
-export const activities = pgTable('activities', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  description: text('description'),
-  image: varchar('image', { length: 500 }),
-  emoji: varchar('emoji', { length: 10 }),
-  isPeriodic: boolean('is_periodic').notNull().default(true),
-  dayOfWeek: dayOfWeekEnum('day_of_week'),
-  startTime: time('start_time').notNull(),
-  endTime: time('end_time').notNull(),
-  startDate: date('start_date'),
-  endDate: date('end_date'),
-  createdBy: integer('created_by')
+export const activities = pgTable("activities", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  image: varchar("image", { length: 500 }),
+  emoji: varchar("emoji", { length: 10 }),
+  isPeriodic: boolean("is_periodic").notNull().default(true),
+  dayOfWeek: dayOfWeekEnum("day_of_week"),
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Checkins table
-export const checkins = pgTable('checkins', {
-  id: serial('id').primaryKey(),
-  registrationNumber: integer('registration_number')
+export const checkins = pgTable("checkins", {
+  id: serial("id").primaryKey(),
+  registrationNumber: integer("registration_number")
     .notNull()
     .references(() => members.registrationNumber),
-  activityId: integer('activity_id')
+  activityId: integer("activity_id")
     .notNull()
     .references(() => activities.id),
-  checkInTime: timestamp('check_in_time').notNull().defaultNow(),
-  checkOutTime: timestamp('check_out_time'),
-  visitReason: varchar('visit_reason', { length: 500 }),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  checkInTime: timestamp("check_in_time").notNull().defaultNow(),
+  checkOutTime: timestamp("check_out_time"),
+  visitReason: varchar("visit_reason", { length: 500 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const volunteers = pgTable('volunteers', {
-  id: serial('id').primaryKey(),
-  registrationNumber: integer('registration_number')
-    .references(() => members.registrationNumber),
-  joinDate: date('join_date'),
-  role: varchar('role', { length: 255 }),
-  expirationDate: date('expiration_date'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  createdBy: integer('created_by')
+export const volunteers = pgTable("volunteers", {
+  id: serial("id").primaryKey(),
+  registrationNumber: integer("registration_number").references(
+    () => members.registrationNumber,
+  ),
+  joinDate: date("join_date"),
+  role: varchar("role", { length: 255 }),
+  expirationDate: date("expiration_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),
 });
