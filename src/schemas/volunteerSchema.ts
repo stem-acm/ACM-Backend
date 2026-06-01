@@ -29,6 +29,7 @@ export const volunteerQuerySchema = z.object({
       const parsed = val ? Number.parseInt(val, 10) : 50;
       return Math.min(parsed, 100); // Max 100
     }),
+  search: z.string().optional().default(''),
   sortBy: z
     .enum(['id', 'registrationNumber', 'role', 'joinDate', 'expirationDate', 'createdAt'])
     .optional()

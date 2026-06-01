@@ -1,11 +1,11 @@
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { db } from "@/db/drizzle";
-import { checkins, members, volunteers } from "@/db/schema";
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { db } from '@/db/drizzle';
+import { checkins, members, volunteers } from '@/db/schema';
 import type {
   CreateMemberInput,
   MemberQueryInput,
   UpdateMemberInput,
-} from "@/schemas/memberSchema";
+} from '@/schemas/memberSchema';
 
 export async function createMember(input: CreateMemberInput) {
   const [newMember] = await db.insert(members).values(input).returning();
@@ -23,11 +23,8 @@ export async function getMembers(query: MemberQueryInput) {
       or(
         ilike(members.firstName, `%${search}%`),
         ilike(members.lastName, `%${search}%`),
-        ilike(
-          sql<string>`cast(${members.registrationNumber} as text)`,
-          `%${search}%`,
-        ),
-      ),
+        ilike(sql<string>`cast(${members.registrationNumber} as text)`, `%${search}%`)
+      )
     );
   }
 
@@ -46,27 +43,19 @@ export async function getMembers(query: MemberQueryInput) {
   }
 
   // Apply sorting
-  const orderBy = order === "desc" ? desc : asc;
+  const orderBy = order === 'desc' ? desc : asc;
   switch (sortBy) {
-    case "firstName":
-      dataQuery = dataQuery.orderBy(
-        orderBy(members.firstName),
-      ) as typeof dataQuery;
+    case 'firstName':
+      dataQuery = dataQuery.orderBy(orderBy(members.firstName)) as typeof dataQuery;
       break;
-    case "lastName":
-      dataQuery = dataQuery.orderBy(
-        orderBy(members.lastName),
-      ) as typeof dataQuery;
+    case 'lastName':
+      dataQuery = dataQuery.orderBy(orderBy(members.lastName)) as typeof dataQuery;
       break;
-    case "joinDate":
-      dataQuery = dataQuery.orderBy(
-        orderBy(members.joinDate),
-      ) as typeof dataQuery;
+    case 'joinDate':
+      dataQuery = dataQuery.orderBy(orderBy(members.joinDate)) as typeof dataQuery;
       break;
     default:
-      dataQuery = dataQuery.orderBy(
-        orderBy(members.registrationNumber),
-      ) as typeof dataQuery;
+      dataQuery = dataQuery.orderBy(orderBy(members.registrationNumber)) as typeof dataQuery;
   }
 
   // Apply pagination
@@ -92,9 +81,7 @@ export async function getMemberById(id: number) {
   return member || null;
 }
 
-export async function getMemberByRegistrationNumber(
-  registrationNumber: string,
-) {
+export async function getMemberByRegistrationNumber(registrationNumber: string) {
   const parsedRegNum = Number.parseInt(registrationNumber, 10);
   if (Number.isNaN(parsedRegNum)) {
     return null;
@@ -118,7 +105,7 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
     .returning();
 
   if (!updatedMember) {
-    throw new Error("Member not found");
+    throw new Error('Member not found');
   }
 
   return updatedMember;
@@ -137,7 +124,7 @@ export async function deleteMember(id: number) {
     .returning();
 
   if (!deletedMember) {
-    throw new Error("Member not found");
+    throw new Error('Member not found');
   }
 
   return deletedMember;
