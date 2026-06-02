@@ -34,6 +34,9 @@ const configSchema = z.object({
     windowMs: z.number().default(15 * 60 * 1000), // 15 minutes
     max: z.number().int().positive().default(1000),
   }),
+  qr: z.object({
+    secret: z.string().min(1, 'QR_SECRET is required'),
+  }),
 });
 
 type Config = z.infer<typeof configSchema>;
@@ -60,6 +63,9 @@ function loadConfig(): Config {
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: env.MAX_REQUEST_LIMIT, // limit each IP to MAX_REQUEST_LIMIT requests per windowMs
+    },
+    qr: {
+      secret: env.QR_SECRET || env.JWT_SECRET || '',
     },
   };
 

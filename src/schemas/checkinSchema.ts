@@ -8,6 +8,7 @@ const isoDateTimeSchema = z
 export const createCheckinSchema = z
   .object({
     registrationNumber: z.number(),
+    signature: z.string().min(1, 'QR code signature is required'),
     activityId: z.number().int().positive('Activity ID must be a positive integer'),
     checkInTime: isoDateTimeSchema,
     checkOutTime: isoDateTimeSchema,

@@ -6,6 +6,7 @@ import type {
   MemberQueryInput,
   UpdateMemberInput,
 } from '@/schemas/memberSchema';
+import { signQRCode } from '@/utils/qrUtils';
 
 export async function createMember(input: CreateMemberInput) {
   const [newMember] = await db.insert(members).values(input).returning();
@@ -141,6 +142,10 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
   }
 
   return updatedMember;
+}
+
+export function getQRCodeData(registrationNumber: number) {
+  return signQRCode(registrationNumber);
 }
 
 export async function deleteMember(id: number) {
