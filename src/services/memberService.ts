@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { checkins, members, volunteers } from '@/db/schema';
 import type {
@@ -13,8 +13,31 @@ export async function createMember(input: CreateMemberInput) {
   return newMember;
 }
 
+export async function getStudyPlaces() {
+  const rows = await db
+    .selectDistinct({ value: members.studyOrWorkPlace })
+    .from(members)
+    .where(
+      and(sql`${members.studyOrWorkPlace} IS NOT NULL`, sql`${members.studyOrWorkPlace} != ''`)
+    )
+    .orderBy(members.studyOrWorkPlace);
+
+  // Deduplicate case-insensitively and trim whitespace
+  // (PG SELECT DISTINCT is case-sensitive and treats trailing spaces as significant)
+  const seen = new Set<string>();
+  return rows
+    .map((r) => r.value.trim())
+    .filter((place) => {
+      const key = place.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort();
+}
+
 export async function getMembers(query: MemberQueryInput) {
-  const { offset, limit, search, sortBy, order } = query;
+  const { offset, limit, search, studyPlaces, sortBy, order } = query;
 
   // Build where conditions
   const conditions = [];
@@ -26,6 +49,15 @@ export async function getMembers(query: MemberQueryInput) {
         ilike(sql<string>`cast(${members.registrationNumber} as text)`, `%${search}%`)
       )
     );
+  }
+  if (studyPlaces) {
+    const places = studyPlaces
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (places.length > 0) {
+      conditions.push(inArray(members.studyOrWorkPlace, places));
+    }
   }
 
   // Get total count

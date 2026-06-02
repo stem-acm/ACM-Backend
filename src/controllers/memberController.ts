@@ -7,6 +7,7 @@ import {
   getMemberById,
   getMemberByRegistrationNumber,
   getMembers,
+  getStudyPlaces,
   updateMember,
 } from '@/services/memberService';
 
@@ -98,6 +99,24 @@ export async function getByRegistrationNumber(req: Request, res: Response): Prom
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to retrieve member';
+    res.status(400).json({
+      success: false,
+      message,
+      data: null,
+    });
+  }
+}
+
+export async function getStudyPlacesHandler(_req: Request, res: Response): Promise<void> {
+  try {
+    const places = await getStudyPlaces();
+    res.status(200).json({
+      success: true,
+      message: 'Study places retrieved successfully',
+      data: places,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to retrieve study places';
     res.status(400).json({
       success: false,
       message,

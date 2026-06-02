@@ -33,7 +33,10 @@ export const createMemberSchema = z.object({
   address: z.string().nullable(),
   occupation: occupationEnum.nullable(),
   phoneNumber: z.string().nullable(),
-  studyOrWorkPlace: z.string().nullable(),
+  studyOrWorkPlace: z
+    .string()
+    .nullable()
+    .transform((val) => val?.trim() ?? null),
   joinDate: dateSchema.nullable(),
   profileImage: z.string().nullable(),
 });
@@ -53,6 +56,7 @@ export const memberQuerySchema = z.object({
       return Math.min(parsed, 100);
     }),
   search: z.string().optional(),
+  studyPlaces: z.string().optional(),
   sortBy: z.enum(['id', 'firstName', 'lastName', 'joinDate']).optional().default('id'),
   order: z.enum(['asc', 'desc']).optional().default('asc'),
 });
