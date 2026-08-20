@@ -14,7 +14,7 @@ export async function getDashboardStats(date?: string) {
   const checkinsList = await db
     .select({
       id: checkins.id,
-      memberId: checkins.memberId,
+      registrationNumber: checkins.registrationNumber,
       activityId: checkins.activityId,
       checkInTime: checkins.checkInTime,
       checkOutTime: checkins.checkOutTime,
@@ -31,7 +31,7 @@ export async function getDashboardStats(date?: string) {
       const [member] = await db
         .select()
         .from(members)
-        .where(eq(members.id, checkin.memberId))
+        .where(eq(members.registrationNumber, checkin.registrationNumber))
         .limit(1);
 
       const [activity] = await db

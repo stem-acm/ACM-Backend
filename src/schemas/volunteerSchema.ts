@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 // Base volunteer object schema (without createdBy - that's added server-side)
 const volunteerObjectSchema = z.object({
-  memberId: z.number(),
+  registrationNumber: z.number().nullable(),
+  role: z.string().nullable(),
   joinDate: z.string().date().nullable(),
   expirationDate: z.string().date().nullable(),
 });
@@ -28,8 +29,9 @@ export const volunteerQuerySchema = z.object({
       const parsed = val ? Number.parseInt(val, 10) : 50;
       return Math.min(parsed, 100); // Max 100
     }),
+  search: z.string().optional().default(''),
   sortBy: z
-    .enum(['id', 'memberId', 'joinDate', 'expirationDate', 'createdAt'])
+    .enum(['id', 'registrationNumber', 'role', 'joinDate', 'expirationDate', 'createdAt'])
     .optional()
     .default('id'),
   order: z.enum(['asc', 'desc']).optional().default('asc'),

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { checkins, members, volunteers } from '@/db/schema';
 import type {
@@ -8,26 +8,36 @@ import type {
 } from '@/schemas/memberSchema';
 
 export async function createMember(input: CreateMemberInput) {
-  const [newMember] = await db
-    .insert(members)
-    .values({
-      ...input,
-      registrationNumber: '', // Will be updated after insert
+  const [newMember] = await db.insert(members).values(input).returning();
+
+  return newMember;
+}
+
+export async function getStudyPlaces() {
+  const rows = await db
+    .selectDistinct({ value: members.studyOrWorkPlace })
+    .from(members)
+    .where(
+      and(sql`${members.studyOrWorkPlace} IS NOT NULL`, sql`${members.studyOrWorkPlace} != ''`)
+    )
+    .orderBy(members.studyOrWorkPlace);
+
+  // Deduplicate case-insensitively and trim whitespace
+  // (PG SELECT DISTINCT is case-sensitive and treats trailing spaces as significant)
+  const seen = new Set<string>();
+  return rows
+    .map((r) => r.value.trim())
+    .filter((place) => {
+      const key = place.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     })
-    .returning();
-
-  // Update registration number based on ID
-  const [updatedMember] = await db
-    .update(members)
-    .set({ registrationNumber: `ACMJN-${`${newMember.id.toString()}`.padStart(6, '0')}` })
-    .where(eq(members.id, newMember.id))
-    .returning();
-
-  return updatedMember;
+    .sort();
 }
 
 export async function getMembers(query: MemberQueryInput) {
-  const { offset, limit, search, sortBy, order } = query;
+  const { offset, limit, search, studyPlaces, sortBy, order } = query;
 
   // Build where conditions
   const conditions = [];
@@ -36,9 +46,18 @@ export async function getMembers(query: MemberQueryInput) {
       or(
         ilike(members.firstName, `%${search}%`),
         ilike(members.lastName, `%${search}%`),
-        ilike(members.registrationNumber, `%${search}%`)
+        ilike(sql<string>`cast(${members.registrationNumber} as text)`, `%${search}%`)
       )
     );
+  }
+  if (studyPlaces) {
+    const places = studyPlaces
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (places.length > 0) {
+      conditions.push(inArray(members.studyOrWorkPlace, places));
+    }
   }
 
   // Get total count
@@ -68,7 +87,7 @@ export async function getMembers(query: MemberQueryInput) {
       dataQuery = dataQuery.orderBy(orderBy(members.joinDate)) as typeof dataQuery;
       break;
     default:
-      dataQuery = dataQuery.orderBy(orderBy(members.id)) as typeof dataQuery;
+      dataQuery = dataQuery.orderBy(orderBy(members.registrationNumber)) as typeof dataQuery;
   }
 
   // Apply pagination
@@ -86,15 +105,23 @@ export async function getMembers(query: MemberQueryInput) {
 }
 
 export async function getMemberById(id: number) {
-  const [member] = await db.select().from(members).where(eq(members.id, id)).limit(1);
+  const [member] = await db
+    .select()
+    .from(members)
+    .where(eq(members.registrationNumber, id))
+    .limit(1);
   return member || null;
 }
 
 export async function getMemberByRegistrationNumber(registrationNumber: string) {
+  const parsedRegNum = Number.parseInt(registrationNumber, 10);
+  if (Number.isNaN(parsedRegNum)) {
+    return null;
+  }
   const [member] = await db
     .select()
     .from(members)
-    .where(eq(members.registrationNumber, registrationNumber))
+    .where(eq(members.registrationNumber, parsedRegNum))
     .limit(1);
   return member || null;
 }
@@ -106,7 +133,7 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
       ...input,
       updatedAt: new Date(),
     })
-    .where(eq(members.id, id))
+    .where(eq(members.registrationNumber, id))
     .returning();
 
   if (!updatedMember) {
@@ -118,12 +145,15 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
 
 export async function deleteMember(id: number) {
   // Delete associated check-ins
-  await db.delete(checkins).where(eq(checkins.memberId, id));
+  await db.delete(checkins).where(eq(checkins.registrationNumber, id));
 
   // Delete associated volunteer records
-  await db.delete(volunteers).where(eq(volunteers.memberId, id));
+  await db.delete(volunteers).where(eq(volunteers.registrationNumber, id));
 
-  const [deletedMember] = await db.delete(members).where(eq(members.id, id)).returning();
+  const [deletedMember] = await db
+    .delete(members)
+    .where(eq(members.registrationNumber, id))
+    .returning();
 
   if (!deletedMember) {
     throw new Error('Member not found');

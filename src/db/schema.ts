@@ -1,3 +1,4 @@
+import { title } from 'node:process';
 import {
   boolean,
   date,
@@ -30,6 +31,12 @@ export const dayOfWeekEnum = pgEnum('day_of_week', [
   'saturday',
 ]);
 
+// Title enum
+export const titleEnum = pgEnum('title', ['Miss', 'Mr', 'Mrs']);
+
+// Gender enum
+export const genderEnum = pgEnum('gender', ['male', 'female']);
+
 // Users table
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -42,10 +49,11 @@ export const users = pgTable('users', {
 
 // Members table
 export const members = pgTable('members', {
-  id: serial('id').primaryKey(),
-  registrationNumber: varchar('registration_number', { length: 255 }).notNull().unique(),
+  registrationNumber: serial('registration_number').primaryKey(),
   firstName: varchar('first_name', { length: 255 }).notNull(),
-  lastName: varchar('last_name', { length: 255 }).notNull(),
+  lastName: varchar('last_name', { length: 255 }),
+  title: titleEnum('title'),
+  gender: genderEnum('gender'),
   birthDate: date('birth_date'),
   birthPlace: varchar('birth_place', { length: 255 }),
   address: text('address'),
@@ -81,9 +89,9 @@ export const activities = pgTable('activities', {
 // Checkins table
 export const checkins = pgTable('checkins', {
   id: serial('id').primaryKey(),
-  memberId: integer('member_id')
+  registrationNumber: integer('registration_number')
     .notNull()
-    .references(() => members.id),
+    .references(() => members.registrationNumber),
   activityId: integer('activity_id')
     .notNull()
     .references(() => activities.id),
@@ -96,10 +104,9 @@ export const checkins = pgTable('checkins', {
 
 export const volunteers = pgTable('volunteers', {
   id: serial('id').primaryKey(),
-  memberId: integer('member_id')
-    .notNull()
-    .references(() => members.id),
+  registrationNumber: integer('registration_number').references(() => members.registrationNumber),
   joinDate: date('join_date'),
+  role: varchar('role', { length: 255 }),
   expirationDate: date('expiration_date'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

@@ -4,6 +4,7 @@ import {
   getAll,
   getById,
   getByRegistrationNumber,
+  getStudyPlacesHandler,
   remove,
   update,
 } from '@/controllers/memberController';
@@ -119,6 +120,33 @@ router.get('/', getAll);
  *         description: Member not found
  */
 router.get('/registration/:registrationNumber', getByRegistrationNumber);
+
+/**
+ * @swagger
+ * /api/members/study-places:
+ *   get:
+ *     summary: Get all study/work places
+ *     description: Retrieve distinct study or workplace values from members
+ *     tags: [Members]
+ *     responses:
+ *       200:
+ *         description: Study places retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
+router.get('/study-places', getStudyPlacesHandler);
 
 /**
  * @swagger
