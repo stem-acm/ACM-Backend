@@ -7,6 +7,7 @@ import {
   getMemberById,
   getMemberByRegistrationNumber,
   getMembers,
+  getQRCodeData,
   getStudyPlaces,
   updateMember,
 } from '@/services/memberService';
@@ -117,6 +118,46 @@ export async function getStudyPlacesHandler(_req: Request, res: Response): Promi
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to retrieve study places';
+    res.status(400).json({
+      success: false,
+      message,
+      data: null,
+    });
+  }
+}
+
+export async function getQRCode(req: Request, res: Response): Promise<void> {
+  try {
+    const { registrationNumber } = req.params;
+    const parsedRegNum = Number.parseInt(registrationNumber, 10);
+
+    if (Number.isNaN(parsedRegNum)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid registration number',
+        data: null,
+      });
+      return;
+    }
+
+    const member = await getMemberByRegistrationNumber(registrationNumber);
+    if (!member) {
+      res.status(404).json({
+        success: false,
+        message: 'Member not found',
+        data: null,
+      });
+      return;
+    }
+
+    const qrData = getQRCodeData(parsedRegNum);
+    res.status(200).json({
+      success: true,
+      message: 'QR code data generated successfully',
+      data: qrData,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to generate QR code data';
     res.status(400).json({
       success: false,
       message,

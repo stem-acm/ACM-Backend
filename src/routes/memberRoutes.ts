@@ -4,6 +4,7 @@ import {
   getAll,
   getById,
   getByRegistrationNumber,
+  getQRCode,
   getStudyPlacesHandler,
   remove,
   update,
@@ -120,6 +121,44 @@ router.get('/', getAll);
  *         description: Member not found
  */
 router.get('/registration/:registrationNumber', getByRegistrationNumber);
+
+/**
+ * @swagger
+ * /api/members/registration/{registrationNumber}/qr-code:
+ *   get:
+ *     summary: Get QR code data for a member
+ *     description: Get signed QR code data (registration number + HMAC signature) for a member badge
+ *     tags: [Members]
+ *     parameters:
+ *       - in: path
+ *         name: registrationNumber
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Member registration number
+ *     responses:
+ *       200:
+ *         description: QR code data generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     registrationNumber:
+ *                       type: integer
+ *                     signature:
+ *                       type: string
+ *       404:
+ *         description: Member not found
+ */
+router.get('/registration/:registrationNumber/qr-code', getQRCode);
 
 /**
  * @swagger

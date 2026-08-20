@@ -3,8 +3,14 @@ import { db } from '@/db/drizzle';
 import { activities, checkins, members } from '@/db/schema';
 import type { CheckinQueryInput, CreateCheckinInput } from '@/schemas/checkinSchema';
 import { getCheckinSlot, validateCheckinTime } from '@/utils/checkinUtils';
+import { verifyQRCode } from '@/utils/qrUtils';
 
 export async function createCheckin(input: CreateCheckinInput) {
+  // Verify QR code signature to prevent forged badges
+  if (!verifyQRCode({ registrationNumber: input.registrationNumber, signature: input.signature })) {
+    throw new Error('Invalid QR code signature');
+  }
+
   // Find member by registration number
   const [member] = await db
     .select()
