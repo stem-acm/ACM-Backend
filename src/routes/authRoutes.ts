@@ -1,9 +1,14 @@
 import { Router } from 'express';
-import { login, register, verifyTokenEndpoint } from '@/controllers/authController';
+import { login, register, updateProfile, verifyTokenEndpoint } from '@/controllers/authController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
-import { generalRateLimiter, loginRateLimiter } from '@/middlewares/rateLimiter';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
+import {
+  generalRateLimiter,
+  loginRateLimiter,
+  profileRateLimiter,
+} from '@/middlewares/rateLimiter';
 import { validateRequest } from '@/middlewares/validateRequest';
-import { loginSchema, registerSchema } from '@/schemas/userSchema';
+import { loginSchema, registerSchema, updateProfileSchema } from '@/schemas/userSchema';
 
 const router: Router = Router();
 
@@ -74,7 +79,7 @@ router.post('/login', loginRateLimiter, validateRequest(loginSchema), login);
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account (requires authentication)
+ *     description: Create a new user account (admin only)
  *     tags: [Authentication]
  *     security:
  *       - bearerAuth: []
@@ -88,6 +93,7 @@ router.post('/login', loginRateLimiter, validateRequest(loginSchema), login);
  *               - username
  *               - email
  *               - password
+ *               - role
  *             properties:
  *               username:
  *                 type: string
@@ -103,6 +109,9 @@ router.post('/login', loginRateLimiter, validateRequest(loginSchema), login);
  *                 minLength: 8
  *                 format: password
  *                 example: password123
+ *               role:
+ *                 type: string
+ *                 enum: [admin, intern, volunteer]
  *     responses:
  *       201:
  *         description: User created successfully
@@ -135,6 +144,7 @@ router.post(
   '/register',
   generalRateLimiter,
   authMiddleware,
+  requirePermission('settings.manage'),
   validateRequest(registerSchema),
   register
 );
@@ -186,5 +196,14 @@ router.post(
  *         description: Invalid or expired token
  */
 router.get('/token', generalRateLimiter, verifyTokenEndpoint);
+
+router.put(
+  '/profile',
+  profileRateLimiter,
+  authMiddleware,
+  requirePermission('profile.edit'),
+  validateRequest(updateProfileSchema),
+  updateProfile
+);
 
 export default router;

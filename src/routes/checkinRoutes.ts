@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { create, getAll, getByRegistrationNumber, remove } from '@/controllers/checkinController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { createCheckinSchema } from '@/schemas/checkinSchema';
 
@@ -62,7 +63,13 @@ const router: Router = Router();
  *       404:
  *         description: Member or activity not found
  */
-router.post('/', validateRequest(createCheckinSchema), create);
+router.post(
+  '/',
+  authMiddleware,
+  requirePermission('checkins.create'),
+  validateRequest(createCheckinSchema),
+  create
+);
 
 /**
  * @swagger
@@ -146,7 +153,7 @@ router.post('/', validateRequest(createCheckinSchema), create);
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', getAll);
+router.get('/', authMiddleware, requirePermission('checkins.view'), getAll);
 
 /**
  * @swagger
@@ -205,7 +212,12 @@ router.get('/', getAll);
  *       404:
  *         description: Member not found
  */
-router.get('/:registrationNumber', getByRegistrationNumber);
+router.get(
+  '/:registrationNumber',
+  authMiddleware,
+  requirePermission('checkins.view'),
+  getByRegistrationNumber
+);
 
 /**
  * @swagger
@@ -242,6 +254,6 @@ router.get('/:registrationNumber', getByRegistrationNumber);
  *       404:
  *         description: Check-in not found
  */
-router.delete('/:id', authMiddleware, remove);
+router.delete('/:id', authMiddleware, requirePermission('checkins.delete'), remove);
 
 export default router;

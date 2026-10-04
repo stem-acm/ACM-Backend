@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getDashboard } from '@/controllers/dashboardController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
 
 const router: Router = Router();
 
@@ -55,6 +56,6 @@ const router: Router = Router();
  *       400:
  *         description: Failed to retrieve dashboard stats
  */
-router.get('/', authMiddleware, getDashboard);
+router.get('/', authMiddleware, requirePermission('dashboard.view'), getDashboard);
 
 export default router;

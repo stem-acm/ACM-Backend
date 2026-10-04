@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { create, getAll, getById, remove, update } from '@/controllers/activityController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { createActivitySchema, updateActivitySchema } from '@/schemas/activitySchema';
 
@@ -76,7 +77,7 @@ const router: Router = Router();
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', getAll);
+router.get('/', authMiddleware, requirePermission('activities.view'), getAll);
 
 /**
  * @swagger
@@ -111,7 +112,7 @@ router.get('/', getAll);
  *       404:
  *         description: Activity not found
  */
-router.get('/:id', getById);
+router.get('/:id', authMiddleware, requirePermission('activities.view'), getById);
 
 /**
  * @swagger
@@ -164,7 +165,13 @@ router.get('/:id', getById);
  *       400:
  *         description: Invalid input
  */
-router.post('/', authMiddleware, validateRequest(createActivitySchema), create);
+router.post(
+  '/',
+  authMiddleware,
+  requirePermission('activities.create'),
+  validateRequest(createActivitySchema),
+  create
+);
 
 /**
  * @swagger
@@ -219,7 +226,13 @@ router.post('/', authMiddleware, validateRequest(createActivitySchema), create);
  *       404:
  *         description: Activity not found
  */
-router.put('/:id', authMiddleware, validateRequest(updateActivitySchema), update);
+router.put(
+  '/:id',
+  authMiddleware,
+  requirePermission('activities.update'),
+  validateRequest(updateActivitySchema),
+  update
+);
 
 /**
  * @swagger
@@ -258,6 +271,6 @@ router.put('/:id', authMiddleware, validateRequest(updateActivitySchema), update
  *       404:
  *         description: Activity not found
  */
-router.delete('/:id', authMiddleware, remove);
+router.delete('/:id', authMiddleware, requirePermission('activities.delete'), remove);
 
 export default router;

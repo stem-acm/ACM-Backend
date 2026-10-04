@@ -2,8 +2,20 @@ import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { users } from '@/db/schema';
-import type { LoginInput, RegisterInput } from '@/schemas/userSchema';
+import type { LoginInput, RegisterInput, UpdateProfileInput } from '@/schemas/userSchema';
+import { getRolePolicy, type Role } from '@/services/accessService';
 import { generateToken } from '@/utils/jwtUtils';
+
+function publicUser(user: typeof users.$inferSelect, permissions: Record<string, boolean>) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    active: user.active,
+    permissions,
+  };
+}
 
 export async function loginUser(input: LoginInput) {
   const [user] = await db.select().from(users).where(eq(users.username, input.username)).limit(1);
@@ -18,6 +30,9 @@ export async function loginUser(input: LoginInput) {
     throw new Error('Invalid password');
   }
 
+  const policy = await getRolePolicy(user.role as Role);
+  if (!user.active || !policy.active) throw new Error('Account or role is inactive');
+
   const token = generateToken({
     id: user.id,
     username: user.username,
@@ -26,11 +41,7 @@ export async function loginUser(input: LoginInput) {
 
   return {
     token,
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-    },
+    user: publicUser(user, policy.permissions),
   };
 }
 
@@ -67,6 +78,7 @@ export async function registerUser(input: RegisterInput) {
       username: input.username,
       email: input.email,
       password: hashedPassword,
+      role: input.role,
     })
     .returning();
 
@@ -74,6 +86,8 @@ export async function registerUser(input: RegisterInput) {
     id: newUser.id,
     username: newUser.username,
     email: newUser.email,
+    role: newUser.role,
+    active: newUser.active,
   };
 }
 
@@ -84,9 +98,45 @@ export async function verifyUserToken(userId: number) {
     throw new Error('User not found');
   }
 
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-  };
+  const policy = await getRolePolicy(user.role as Role);
+  if (!user.active || !policy.active) throw new Error('Account or role is inactive');
+  return publicUser(user, policy.permissions);
+}
+
+export async function updateOwnProfile(userId: number, input: UpdateProfileInput) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) throw new Error('User not found');
+  if (!(await bcrypt.compare(input.currentPassword, user.password))) {
+    throw new Error('Incorrect current password');
+  }
+  if (input.username && input.username !== user.username) {
+    const [taken] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, input.username))
+      .limit(1);
+    if (taken) throw new Error('Username already exists');
+  }
+  if (input.email && input.email !== user.email) {
+    const [taken] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, input.email))
+      .limit(1);
+    if (taken) throw new Error('Email already exists');
+  }
+  const [updated] = await db
+    .update(users)
+    .set({
+      ...(input.username !== undefined && { username: input.username }),
+      ...(input.email !== undefined && { email: input.email }),
+      ...(input.newPassword !== undefined && {
+        password: await bcrypt.hash(input.newPassword, 10),
+      }),
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning();
+  const policy = await getRolePolicy(updated.role as Role);
+  return publicUser(updated, policy.permissions);
 }

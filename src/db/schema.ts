@@ -1,8 +1,8 @@
-import { title } from 'node:process';
 import {
   boolean,
   date,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   serial,
@@ -43,7 +43,16 @@ export const users = pgTable('users', {
   username: varchar('username', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
+  role: varchar('role', { length: 20 }).notNull().default('volunteer'),
+  active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+export const rolePolicies = pgTable('role_policies', {
+  role: varchar('role', { length: 20 }).primaryKey(),
+  active: boolean('active').notNull().default(true),
+  permissions: jsonb('permissions').$type<Record<string, boolean>>().notNull().default({}),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 

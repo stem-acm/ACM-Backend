@@ -27,8 +27,9 @@ export async function getStudyPlaces() {
   // (PG SELECT DISTINCT is case-sensitive and treats trailing spaces as significant)
   const seen = new Set<string>();
   return rows
-    .map((r) => r.value.trim())
+    .map((r) => r.value?.trim() ?? '')
     .filter((place) => {
+      if (!place) return false;
       const key = place.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);

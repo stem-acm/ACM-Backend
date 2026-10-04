@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { create, getAll, getById, remove, update } from '@/controllers/volunteerController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { createVolunteerSchema, updateVolunteerSchema } from '@/schemas/volunteerSchema';
 
@@ -73,7 +74,7 @@ const router: Router = Router();
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', getAll);
+router.get('/', authMiddleware, requirePermission('volunteers.view'), getAll);
 
 /**
  * @swagger
@@ -108,7 +109,7 @@ router.get('/', getAll);
  *       404:
  *         description: Volunteer not found
  */
-router.get('/:id', getById);
+router.get('/:id', authMiddleware, requirePermission('volunteers.view'), getById);
 
 /**
  * @swagger
@@ -190,7 +191,13 @@ router.get('/:id', getById);
  *       400:
  *         description: Invalid input
  */
-router.post('/', authMiddleware, validateRequest(createVolunteerSchema), create);
+router.post(
+  '/',
+  authMiddleware,
+  requirePermission('volunteers.create'),
+  validateRequest(createVolunteerSchema),
+  create
+);
 
 /**
  * @swagger
@@ -249,7 +256,13 @@ router.post('/', authMiddleware, validateRequest(createVolunteerSchema), create)
  *       404:
  *         description: Volunteer not found
  */
-router.put('/:id', authMiddleware, validateRequest(updateVolunteerSchema), update);
+router.put(
+  '/:id',
+  authMiddleware,
+  requirePermission('volunteers.update'),
+  validateRequest(updateVolunteerSchema),
+  update
+);
 
 /**
  * @swagger
@@ -286,6 +299,6 @@ router.put('/:id', authMiddleware, validateRequest(updateVolunteerSchema), updat
  *       404:
  *         description: Volunteer not found
  */
-router.delete('/:id', authMiddleware, remove);
+router.delete('/:id', authMiddleware, requirePermission('volunteers.delete'), remove);
 
 export default router;
