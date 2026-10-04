@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { login, register, verifyTokenEndpoint } from '@/controllers/authController';
+import { login, register, updateProfile, verifyTokenEndpoint } from '@/controllers/authController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
-import { generalRateLimiter, loginRateLimiter } from '@/middlewares/rateLimiter';
+import {
+  generalRateLimiter,
+  loginRateLimiter,
+  profileRateLimiter,
+} from '@/middlewares/rateLimiter';
 import { validateRequest } from '@/middlewares/validateRequest';
-import { loginSchema, registerSchema } from '@/schemas/userSchema';
+import { loginSchema, registerSchema, updateProfileSchema } from '@/schemas/userSchema';
 
 const router: Router = Router();
 
@@ -192,5 +196,14 @@ router.post(
  *         description: Invalid or expired token
  */
 router.get('/token', generalRateLimiter, verifyTokenEndpoint);
+
+router.put(
+  '/profile',
+  profileRateLimiter,
+  authMiddleware,
+  requirePermission('profile.edit'),
+  validateRequest(updateProfileSchema),
+  updateProfile
+);
 
 export default router;

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '@/middlewares/authMiddleware';
-import { loginUser, registerUser, verifyUserToken } from '@/services/userService';
+import { loginUser, registerUser, updateOwnProfile, verifyUserToken } from '@/services/userService';
 import { verifyToken } from '@/utils/jwtUtils';
 
 export async function login(req: Request, res: Response): Promise<void> {
@@ -78,5 +78,26 @@ export async function verifyTokenEndpoint(req: Request, res: Response): Promise<
       message: error instanceof Error ? error.message : 'Invalid or expired token',
       data: null,
     });
+  }
+}
+
+export async function updateProfile(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required', data: null });
+      return;
+    }
+    const user = await updateOwnProfile(req.user.id, req.body);
+    res.json({ success: true, message: 'Profile updated', data: user });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Profile update failed';
+    const cause = (error as { cause?: { code?: string } })?.cause;
+    const status =
+      message === 'Incorrect current password'
+        ? 400
+        : message.includes('already exists') || cause?.code === '23505'
+          ? 409
+          : 500;
+    res.status(status).json({ success: false, message, data: null });
   }
 }

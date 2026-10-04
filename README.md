@@ -168,6 +168,7 @@ See `.env.example` for all required environment variables.
 - `POST /api/auth/login` - User login
 - `POST /api/auth/register` - Create an admin, intern, or volunteer account (admin only)
 - `GET /api/auth/token` - Verify JWT token
+- `PUT /api/auth/profile` - Change the signed-in user's username, email, or password with their current password
 
 ### Access settings
 

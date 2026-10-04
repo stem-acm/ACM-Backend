@@ -19,5 +19,28 @@ export const registerSchema = z.object({
   role: z.enum(['admin', 'intern', 'volunteer']),
 });
 
+export const updateProfileSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3)
+      .regex(/^[a-zA-Z0-9]+$/)
+      .optional(),
+    email: z.string().email().optional(),
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8)
+      .regex(/[a-zA-Z]/)
+      .regex(/[0-9]/)
+      .optional(),
+  })
+  .refine(
+    (input) =>
+      input.username !== undefined || input.email !== undefined || input.newPassword !== undefined,
+    'At least one profile field is required'
+  );
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

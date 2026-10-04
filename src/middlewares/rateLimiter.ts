@@ -24,3 +24,15 @@ export const loginRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const profileRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many profile update attempts, please try again later',
+    data: null,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

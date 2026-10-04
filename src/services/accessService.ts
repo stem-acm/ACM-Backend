@@ -24,6 +24,7 @@ export const FEATURES = [
   'checkins.create',
   'checkins.view',
   'checkins.delete',
+  'profile.edit',
   'settings.manage',
 ] as const;
 export type Feature = (typeof FEATURES)[number];
@@ -41,6 +42,7 @@ const INTERN_FEATURES: Feature[] = [
   'activities.update',
   'checkins.create',
   'checkins.view',
+  'profile.edit',
 ];
 const VOLUNTEER_FEATURES: Feature[] = [
   'dashboard.view',
@@ -48,6 +50,7 @@ const VOLUNTEER_FEATURES: Feature[] = [
   'volunteers.view',
   'activities.view',
   'checkins.create',
+  'profile.edit',
 ];
 
 export function defaultPermissions(role: Role): Permissions {
