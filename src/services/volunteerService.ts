@@ -111,8 +111,13 @@ export async function getVolunteers(query: VolunteerQueryInput) {
 }
 
 export async function getVolunteerById(id: number) {
-  const [volunteer] = await db.select().from(volunteers).where(eq(volunteers.id, id)).limit(1);
-  return volunteer || null;
+  const [result] = await db
+    .select()
+    .from(volunteers)
+    .leftJoin(members, eq(volunteers.registrationNumber, members.registrationNumber))
+    .where(eq(volunteers.id, id))
+    .limit(1);
+  return result ? { ...result.volunteers, Member: result.members } : null;
 }
 
 export async function updateVolunteer(id: number, input: UpdateVolunteerInput) {
