@@ -166,8 +166,17 @@ See `.env.example` for all required environment variables.
 ### Authentication
 
 - `POST /api/auth/login` - User login
-- `POST /api/auth/register` - Register new user (protected)
+- `POST /api/auth/register` - Create an admin, intern, or volunteer account (admin only)
 - `GET /api/auth/token` - Verify JWT token
+
+### Access settings
+
+- `GET /api/settings/roles` - List role activation and feature permissions (admin only)
+- `PUT /api/settings/roles/:role` - Change a role's activation and permissions (admin only)
+- `GET /api/settings/users` - List accounts and their roles (admin only)
+- `PUT /api/settings/users/:id` - Change an account's role or active status (admin only)
+
+Every member, volunteer, activity, check-in, dashboard, and live-update endpoint requires a signed-in account and its matching feature permission. Existing accounts become admins when migration `0003` runs. New accounts receive a role from an admin. The admin role and its Settings permission stay active so access cannot be locked out globally.
 
 ### Members
 

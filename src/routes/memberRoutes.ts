@@ -10,6 +10,7 @@ import {
   update,
 } from '@/controllers/memberController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { createMemberSchema, updateMemberSchema } from '@/schemas/memberSchema';
 
@@ -85,7 +86,7 @@ const router: Router = Router();
  *       400:
  *         description: Invalid query parameters
  */
-router.get('/', getAll);
+router.get('/', authMiddleware, requirePermission('members.view'), getAll);
 
 /**
  * @swagger
@@ -120,7 +121,12 @@ router.get('/', getAll);
  *       404:
  *         description: Member not found
  */
-router.get('/registration/:registrationNumber', getByRegistrationNumber);
+router.get(
+  '/registration/:registrationNumber',
+  authMiddleware,
+  requirePermission('members.view'),
+  getByRegistrationNumber
+);
 
 /**
  * @swagger
@@ -158,7 +164,12 @@ router.get('/registration/:registrationNumber', getByRegistrationNumber);
  *       404:
  *         description: Member not found
  */
-router.get('/registration/:registrationNumber/qr-code', getQRCode);
+router.get(
+  '/registration/:registrationNumber/qr-code',
+  authMiddleware,
+  requirePermission('members.cards'),
+  getQRCode
+);
 
 /**
  * @swagger
@@ -185,7 +196,12 @@ router.get('/registration/:registrationNumber/qr-code', getQRCode);
  *                   items:
  *                     type: string
  */
-router.get('/study-places', getStudyPlacesHandler);
+router.get(
+  '/study-places',
+  authMiddleware,
+  requirePermission('members.view'),
+  getStudyPlacesHandler
+);
 
 /**
  * @swagger
@@ -257,7 +273,13 @@ router.get('/study-places', getStudyPlacesHandler);
  *       400:
  *         description: Invalid input
  */
-router.post('/', authMiddleware, validateRequest(createMemberSchema), create);
+router.post(
+  '/',
+  authMiddleware,
+  requirePermission('members.create'),
+  validateRequest(createMemberSchema),
+  create
+);
 
 /**
  * @swagger
@@ -294,7 +316,7 @@ router.post('/', authMiddleware, validateRequest(createMemberSchema), create);
  *       404:
  *         description: Member not found
  */
-router.get('/:id', authMiddleware, getById);
+router.get('/:id', authMiddleware, requirePermission('members.view'), getById);
 
 /**
  * @swagger
@@ -363,7 +385,13 @@ router.get('/:id', authMiddleware, getById);
  *       404:
  *         description: Member not found
  */
-router.put('/:id', authMiddleware, validateRequest(updateMemberSchema), update);
+router.put(
+  '/:id',
+  authMiddleware,
+  requirePermission('members.update'),
+  validateRequest(updateMemberSchema),
+  update
+);
 
 /**
  * @swagger
@@ -402,6 +430,6 @@ router.put('/:id', authMiddleware, validateRequest(updateMemberSchema), update);
  *       404:
  *         description: Member not found
  */
-router.delete('/:id', authMiddleware, remove);
+router.delete('/:id', authMiddleware, requirePermission('members.delete'), remove);
 
 export default router;

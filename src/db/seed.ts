@@ -22,6 +22,7 @@ async function seed() {
         username: 'admin',
         email: 'admin@example.com',
         password: hashedPassword,
+        role: 'admin',
       })
       .returning();
 

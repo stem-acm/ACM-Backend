@@ -14,7 +14,13 @@ export async function login(req: Request, res: Response): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Login failed';
     const statusCode =
-      message === 'User not found' ? 404 : message === 'Invalid password' ? 401 : 500;
+      message === 'User not found'
+        ? 404
+        : message === 'Invalid password'
+          ? 401
+          : message === 'Account or role is inactive'
+            ? 403
+            : 500;
     res.status(statusCode).json({
       success: false,
       message,
