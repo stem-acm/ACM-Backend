@@ -39,7 +39,7 @@ export function validateRequest(schema: ZodSchema | z.ZodObject<ZodRawShape>) {
 
         res.status(422).json({
           success: false,
-          message: 'Validation failed',
+          message: errors.map((e) => e.message).join(','),
           data: { errors },
         });
         return;

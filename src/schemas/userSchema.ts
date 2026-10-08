@@ -8,14 +8,14 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   username: z
     .string()
-    .min(3, 'Username must be at least 3 characters')
-    .regex(/^[a-zA-Z0-9]+$/, 'Username must be alphanumeric'),
-  email: z.string().email('Invalid email format'),
+    .min(3, 'errors.UsernameMust3Characters')
+    .regex(/^[a-zA-Z0-9]+$/, 'errors.UsernameMustAlphanumeric'),
+  email: z.string().email('errors.InvalidEmailFormat'),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .min(8, 'errors.passwordMust8Characters')
+    .regex(/[a-zA-Z]/, 'errors.passwordMustContainLetter')
+    .regex(/[0-9]/, 'errors.passwordMustContainNumber'),
   role: z.enum(['admin', 'intern', 'volunteer']),
 });
 
