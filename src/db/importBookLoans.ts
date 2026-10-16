@@ -88,10 +88,11 @@ async function main() {
     `Validated ${loans.length} loans; ${loans.filter((loan) => !loan.effectiveReturnDate).length} unreturned.`
   );
   if (!values.apply) {
-    console.log('Preview only. Use --created-by USER_ID --apply to import.');
+    console.log('Preview only. Use --apply to import; --created-by USER_ID is optional.');
     return;
   }
-  const createdBy = positiveInteger(values['created-by']);
+  const createdBy =
+    values['created-by'] === undefined ? null : positiveInteger(values['created-by']);
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
   const client = postgres(process.env.DATABASE_URL, { max: 1, prepare: false });
   try {
@@ -99,9 +100,11 @@ async function main() {
     await db.transaction(async (tx) => {
       // Serialize imports and prevent inserts racing with ID checks / sequence repair.
       await tx.execute(sql`LOCK TABLE book_loans IN SHARE ROW EXCLUSIVE MODE`);
-      const existingUsers = await tx.select({ id: users.id }).from(users);
-      if (!existingUsers.some((user) => user.id === createdBy)) {
-        throw new Error(`User ${createdBy} does not exist`);
+      if (createdBy !== null) {
+        const existingUsers = await tx.select({ id: users.id }).from(users);
+        if (!existingUsers.some((user) => user.id === createdBy)) {
+          throw new Error(`User ${createdBy} does not exist`);
+        }
       }
       const memberIds = new Set(
         (await tx.select({ id: members.registrationNumber }).from(members)).map((row) => row.id)

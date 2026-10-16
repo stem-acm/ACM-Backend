@@ -1,0 +1,1 @@
+ALTER TABLE "book_loans" ALTER COLUMN "created_by" DROP NOT NULL;

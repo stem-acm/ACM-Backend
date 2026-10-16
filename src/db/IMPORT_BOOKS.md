@@ -16,11 +16,11 @@ All rows pass the existing API validation rules.
 
 Excel serial dates are decoded using the workbook's date system, without timezone
 conversion. Historical creation timestamps are unavailable; database defaults
-set them to the import time. `created_by` must be supplied as an existing user ID.
+set them to the import time. `created_by` defaults to NULL. Optionally supply an existing user ID with `--created-by`.
 
 Run from the repository root. No new dependencies or schema changes are needed.
 Apply the existing database migrations first, including migration 0004 that creates
-`book_loans`, and import members with their original registration numbers.
+`book_loans` and migration 0005 that allows a NULL creator, and import members with their original registration numbers.
 
 Validate the spreadsheet without connecting to a database:
 
@@ -31,16 +31,19 @@ pnpm import-books
 Set `DATABASE_URL` in the environment or `.env`, then import:
 
 ```sh
-pnpm import-books --created-by 1 --apply
+pnpm import-books --apply
 
 ```
+
+To attribute the loans to an existing user, add `--created-by 1` (replace 1 with
+the desired user ID). Omit the option to store NULL.
 
 Use `--file /absolute/path/to/file.xlsx` to read a different file. The first worksheet
 must use the same six headers. The spreadsheet is ignored by Git and must be
 available on the machine running the script.
 
 The script validates the entire workbook before opening a connection. All inserts
-run in one transaction. Missing members, a missing creator, or a conflicting loan
+run in one transaction. Missing members, an explicitly supplied creator that does not exist, or a conflicting loan
 ID abort the import. Existing IDs with identical member, title and date fields are
 skipped; existing records are never overwritten, even if their creator differs.
 This makes rerunning an unchanged workbook safe. A later API edit to an imported
