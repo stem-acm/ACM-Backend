@@ -22,4 +22,4 @@ coverage
 .husky/_
 logs
 uploads
-
+*.xlsx

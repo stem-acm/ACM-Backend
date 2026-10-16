@@ -54,3 +54,5 @@ coverage/
 # Husky
 .husky/_
 
+# Data
+*.xlsx
