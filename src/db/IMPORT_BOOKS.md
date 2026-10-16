@@ -1,0 +1,59 @@
+# Import historical book loans
+
+The books API (`/api/book-loans`) manages loans, rather than a book catalog.
+`2BookData.xlsx`, worksheet `_2BookData`, contains 3,482 loans with unique IDs
+(1 through 3,555, with gaps); 66 have no effective return date.
+All rows pass the existing API validation rules.
+
+| Workbook column | Database column                            |
+| --------------- | ------------------------------------------ |
+| N°              | book_loans.id                              |
+| IdMembre        | registration_number                        |
+| TitreLivre      | book_title (trimmed)                       |
+| DatePret        | borrowing_date                             |
+| DateFinRetour   | expected_return_date                       |
+| DateRetour      | effective_return_date (blank becomes NULL) |
+
+Excel serial dates are decoded using the workbook's date system, without timezone
+conversion. Historical creation timestamps are unavailable; database defaults
+set them to the import time. `created_by` must be supplied as an existing user ID.
+
+Run from the repository root. No new dependencies or schema changes are needed.
+Apply the existing database migrations first, including migration 0004 that creates
+`book_loans`, and import members with their original registration numbers.
+
+Validate the spreadsheet without connecting to a database:
+
+```sh
+pnpm import-books
+```
+
+Set `DATABASE_URL` in the environment or `.env`, then import:
+
+```sh
+pnpm import-books --created-by 1 --apply
+
+```
+
+Use `--file /absolute/path/to/file.xlsx` to read a different file. The first worksheet
+must use the same six headers. The spreadsheet is ignored by Git and must be
+available on the machine running the script.
+
+The script validates the entire workbook before opening a connection. All inserts
+run in one transaction. Missing members, a missing creator, or a conflicting loan
+ID abort the import. Existing IDs with identical member, title and date fields are
+skipped; existing records are never overwritten, even if their creator differs.
+This makes rerunning an unchanged workbook safe. A later API edit to an imported
+loan can cause a conflict on rerun; resolve the data explicitly before retrying.
+
+The importer locks `book_loans` against concurrent writes during the transaction
+and advances its sequence to at least the highest database ID without decreasing
+its current value. PostgreSQL sequence changes are not transactional; a failed
+commit can leave harmless gaps. Read-only API requests can continue during import.
+The offline preview does not check database members, users, or ID conflicts.
+
+Run the parser regression check with:
+
+```sh
+pnpm exec tsx --test tests/importBookLoans.test.ts
+```
