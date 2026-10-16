@@ -124,6 +124,22 @@ export const volunteers = pgTable('volunteers', {
     .references(() => users.id),
 });
 
+export const bookLoans = pgTable('book_loans', {
+  id: serial('id').primaryKey(),
+  registrationNumber: integer('registration_number')
+    .notNull()
+    .references(() => members.registrationNumber),
+  bookTitle: varchar('book_title', { length: 255 }).notNull(),
+  borrowingDate: date('borrowing_date').notNull(),
+  expectedReturnDate: date('expected_return_date').notNull(),
+  effectiveReturnDate: date('effective_return_date'),
+  createdBy: integer('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // Type exports for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -139,3 +155,6 @@ export type NewCheckin = typeof checkins.$inferInsert;
 
 export type Volunteer = typeof volunteers.$inferSelect;
 export type NewVolunteer = typeof volunteers.$inferInsert;
+
+export type BookLoan = typeof bookLoans.$inferSelect;
+export type NewBookLoan = typeof bookLoans.$inferInsert;
