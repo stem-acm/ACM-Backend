@@ -21,6 +21,9 @@ export const FEATURES = [
   'activities.create',
   'activities.update',
   'activities.delete',
+  'books.view',
+  'books.create',
+  'books.update',
   'checkins.create',
   'checkins.view',
   'checkins.delete',
@@ -40,6 +43,9 @@ const INTERN_FEATURES: Feature[] = [
   'activities.view',
   'activities.create',
   'activities.update',
+  'books.view',
+  'books.create',
+  'books.update',
   'checkins.create',
   'checkins.view',
   'profile.edit',
@@ -49,6 +55,7 @@ const VOLUNTEER_FEATURES: Feature[] = [
   'members.view',
   'volunteers.view',
   'activities.view',
+  'books.view',
   'checkins.create',
   'profile.edit',
 ];
@@ -80,6 +87,9 @@ export async function saveRolePolicy(role: Role, active: boolean, permissions: P
   if (safePermissions['volunteers.certificate']) safePermissions['volunteers.view'] = true;
   if (safePermissions['checkins.create']) {
     safePermissions['activities.view'] = true;
+  }
+  if (safePermissions['books.create'] || safePermissions['books.update']) {
+    safePermissions['books.view'] = true;
   }
   const safeActive = role === 'admin' ? true : active;
   await db

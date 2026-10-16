@@ -267,6 +267,26 @@ const swaggerOptions: Options = {
             },
           },
         },
+        BookLoan: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            registrationNumber: { type: 'integer', example: 1 },
+            bookTitle: { type: 'string', example: 'Things Fall Apart' },
+            borrowingDate: { type: 'string', format: 'date', example: '2026-10-16' },
+            expectedReturnDate: { type: 'string', format: 'date', example: '2026-10-23' },
+            effectiveReturnDate: {
+              type: 'string',
+              format: 'date',
+              nullable: true,
+              example: null,
+            },
+            createdBy: { type: 'integer', example: 1 },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+            Member: { $ref: '#/components/schemas/Member' },
+          },
+        },
         Error: {
           type: 'object',
           properties: {

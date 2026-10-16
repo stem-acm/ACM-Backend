@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from '@/middlewares/errorHandler';
 import activityRoutes from '@/routes/activityRoutes';
 // Routes
 import authRoutes from '@/routes/authRoutes';
+import bookLoanRoutes from '@/routes/bookLoanRoutes';
 import checkinRoutes from '@/routes/checkinRoutes';
 import dashboardRoutes from '@/routes/dashboardRoutes';
 import healthRoutes from '@/routes/healthRoutes';
@@ -63,6 +64,7 @@ app.use('/health', healthRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/book-loans', bookLoanRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/checkins', checkinRoutes);
