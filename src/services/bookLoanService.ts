@@ -1,17 +1,37 @@
 import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
-import { bookLoans, members } from '@/db/schema';
+import { bookLoans, members, rolePolicies, users } from '@/db/schema';
 import type {
   BookLoanQueryInput,
   CreateBookLoanInput,
   UpdateBookLoanInput,
 } from '@/schemas/bookLoanSchema';
 
-function withMember(row: {
+const loanSelection = {
+  book_loans: bookLoans,
+  members,
+  User: {
+    id: users.id,
+    username: users.username,
+    email: users.email,
+    role: users.role,
+    active: users.active,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    permissions: sql<Record<string, boolean>>`coalesce(${rolePolicies.permissions}, '{}'::jsonb)`,
+  },
+};
+
+function withRelations(row: {
   book_loans: typeof bookLoans.$inferSelect;
   members: typeof members.$inferSelect | null;
+  User:
+    | (Omit<typeof users.$inferSelect, 'password'> & {
+        permissions: Record<string, boolean>;
+      })
+    | null;
 }) {
-  return { ...row.book_loans, Member: row.members };
+  return { ...row.book_loans, Member: row.members, User: row.User?.id ? row.User : null };
 }
 
 async function ensureMemberExists(registrationNumber: number) {
@@ -73,9 +93,11 @@ export async function getBookLoans(query: BookLoanQueryInput) {
   const [{ count }] = await countQuery;
 
   let dataQuery = db
-    .select()
+    .select(loanSelection)
     .from(bookLoans)
-    .leftJoin(members, eq(bookLoans.registrationNumber, members.registrationNumber));
+    .leftJoin(members, eq(bookLoans.registrationNumber, members.registrationNumber))
+    .leftJoin(users, eq(bookLoans.createdBy, users.id))
+    .leftJoin(rolePolicies, eq(users.role, rolePolicies.role));
   if (where) dataQuery = dataQuery.where(where) as typeof dataQuery;
 
   const orderBy = order === 'desc' ? desc : asc;
@@ -90,19 +112,21 @@ export async function getBookLoans(query: BookLoanQueryInput) {
   const total = Number(count ?? 0);
 
   return {
-    data: rows.map(withMember),
+    data: rows.map(withRelations),
     pagination: { offset, limit, total, hasMore: offset + limit < total },
   };
 }
 
 export async function getBookLoanById(id: number) {
   const [row] = await db
-    .select()
+    .select(loanSelection)
     .from(bookLoans)
     .leftJoin(members, eq(bookLoans.registrationNumber, members.registrationNumber))
+    .leftJoin(users, eq(bookLoans.createdBy, users.id))
+    .leftJoin(rolePolicies, eq(users.role, rolePolicies.role))
     .where(eq(bookLoans.id, id))
     .limit(1);
-  return row ? withMember(row) : null;
+  return row ? withRelations(row) : null;
 }
 
 export async function updateBookLoan(id: number, input: UpdateBookLoanInput) {
