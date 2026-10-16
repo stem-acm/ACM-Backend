@@ -157,3 +157,16 @@ export async function updateBookLoan(id: number, input: UpdateBookLoanInput) {
 export async function returnBookLoan(id: number, effectiveReturnDate: string) {
   return updateBookLoan(id, { effectiveReturnDate });
 }
+
+export async function getBookTitles(search: string, limit: number) {
+  if (!search) return [];
+  const title = sql<string>`trim(${bookLoans.bookTitle})`;
+  const escaped = search.replace(/[\\%_]/g, '\\$&');
+  const rows = await db
+    .selectDistinct({ title })
+    .from(bookLoans)
+    .where(ilike(title, `%${escaped}%`))
+    .orderBy(asc(title))
+    .limit(limit);
+  return rows.map((row) => row.title);
+}

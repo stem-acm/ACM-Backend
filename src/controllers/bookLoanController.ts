@@ -1,10 +1,11 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '@/middlewares/authMiddleware';
-import { bookLoanQuerySchema } from '@/schemas/bookLoanSchema';
+import { bookLoanQuerySchema, bookTitleQuerySchema } from '@/schemas/bookLoanSchema';
 import {
   createBookLoan,
   getBookLoanById,
   getBookLoans,
+  getBookTitles,
   returnBookLoan,
   updateBookLoan,
 } from '@/services/bookLoanService';
@@ -84,5 +85,16 @@ export async function markReturned(req: Request, res: Response): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to return book';
     res.status(errorStatus(message)).json({ success: false, message, data: null });
+  }
+}
+
+export async function getTitles(req: Request, res: Response): Promise<void> {
+  try {
+    const { search, limit } = bookTitleQuerySchema.parse(req.query);
+    const data = await getBookTitles(search, limit);
+    res.status(200).json({ success: true, message: 'Matching book titles', data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to retrieve book titles';
+    res.status(400).json({ success: false, message, data: null });
   }
 }

@@ -1,5 +1,12 @@
 import { Router } from 'express';
-import { create, getAll, getById, markReturned, update } from '@/controllers/bookLoanController';
+import {
+  create,
+  getAll,
+  getById,
+  getTitles,
+  markReturned,
+  update,
+} from '@/controllers/bookLoanController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
@@ -30,6 +37,21 @@ router.get('/', authMiddleware, requirePermission('books.view'), getAll);
 
 /**
  * @swagger
+ * /api/book-loans/titles:
+ *   get:
+ *     summary: Suggest distinct existing book titles
+ *     tags: [Books]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: search, schema: { type: string, maxLength: 255 } }
+ *       - { in: query, name: limit, schema: { type: integer, default: 10, maximum: 20 } }
+ *     responses:
+ *       200: { description: Matching book titles }
+ */
+router.get('/titles', authMiddleware, requirePermission('books.create'), getTitles);
+
+/**
+ * @swagger
  * /api/book-loans/{id}:
  *   get:
  *     summary: Get one book loan
@@ -41,6 +63,7 @@ router.get('/', authMiddleware, requirePermission('books.view'), getAll);
  *       200: { description: Book loan found }
  *       404: { description: Book loan not found }
  */
+
 router.get('/:id', authMiddleware, requirePermission('books.view'), getById);
 
 /**
