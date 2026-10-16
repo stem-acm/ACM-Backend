@@ -31,7 +31,7 @@ pnpm import-books
 Set `DATABASE_URL` in the environment or `.env`, then import:
 
 ```sh
-pnpm import-books --apply
+pnpm import-books --host localhost --port 5434 --apply
 
 ```
 
@@ -60,3 +60,17 @@ Run the parser regression check with:
 ```sh
 pnpm exec tsx --test tests/importBookLoans.test.ts
 ```
+
+## Running on the host with Docker PostgreSQL
+
+The Compose hostname `postgres` resolves inside Docker. From your host machine,
+use the published endpoint `localhost:5434`, keeping credentials and database
+name from `DATABASE_URL`:
+
+```sh
+pnpm import-books --host localhost --port 5434 --apply
+```
+
+These options override the connection for this invocation without editing `.env`
+or changing the backend container configuration. PostgreSQL must be running
+(`docker compose up -d postgres`).

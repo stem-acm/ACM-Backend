@@ -72,13 +72,15 @@ async function main() {
     options: {
       file: { type: 'string', default: '2BookData.xlsx' },
       'created-by': { type: 'string' },
+      host: { type: 'string' },
+      port: { type: 'string' },
       apply: { type: 'boolean', default: false },
       help: { type: 'boolean', default: false },
     },
   });
   if (values.help) {
     console.log(
-      'pnpm import-books [--file path.xlsx] [--created-by USER_ID] [--apply]'
+      'pnpm import-books [--file path.xlsx] [--created-by USER_ID] [--host HOST] [--port PORT] [--apply]'
     );
     console.log('Without --apply: validate workbook only; no database connection.');
     return;
@@ -94,7 +96,14 @@ async function main() {
   const createdBy =
     values['created-by'] === undefined ? null : positiveInteger(values['created-by']);
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
-  const client = postgres(process.env.DATABASE_URL, { max: 1, prepare: false });
+  const databaseUrl = new URL(process.env.DATABASE_URL);
+  if (values.host !== undefined) databaseUrl.hostname = values.host;
+  if (values.port !== undefined) {
+    const port = positiveInteger(values.port);
+    if (port > 65535) throw new Error('Port must be between 1 and 65535');
+    databaseUrl.port = String(port);
+  }
+  const client = postgres(databaseUrl.toString(), { max: 1, prepare: false, connect_timeout: 10 });
   try {
     const db = drizzle(client);
     await db.transaction(async (tx) => {
