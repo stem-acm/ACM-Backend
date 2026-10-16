@@ -23,7 +23,8 @@
     "seed": "tsx src/db/seed.ts",
     "import-members": "tsx src/db/importMembers.ts",
     "db:seed": "docker compose exec backend pnpm seed",
-    "prepare": "husky"
+    "prepare": "husky",
+    "import-books": "tsx src/db/importBookLoans.ts"
   },
   "keywords": [
     "acm",

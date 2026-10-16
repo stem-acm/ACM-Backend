@@ -133,9 +133,7 @@ export const bookLoans = pgTable('book_loans', {
   borrowingDate: date('borrowing_date').notNull(),
   expectedReturnDate: date('expected_return_date').notNull(),
   effectiveReturnDate: date('effective_return_date'),
-  createdBy: integer('created_by')
-    .notNull()
-    .references(() => users.id),
+  createdBy: integer('created_by').references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

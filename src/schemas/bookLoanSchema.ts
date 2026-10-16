@@ -59,3 +59,8 @@ export const bookLoanQuerySchema = z.object({
 export type CreateBookLoanInput = z.infer<typeof createBookLoanSchema>;
 export type UpdateBookLoanInput = z.infer<typeof updateBookLoanSchema>;
 export type BookLoanQueryInput = z.infer<typeof bookLoanQuerySchema>;
+
+export const bookTitleQuerySchema = z.object({
+  search: z.string().trim().max(255).default(''),
+  limit: z.coerce.number().int().min(1).max(20).default(10),
+});
