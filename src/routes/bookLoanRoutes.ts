@@ -29,7 +29,7 @@ const router: Router = Router();
  *       - { in: query, name: offset, schema: { type: integer, default: 0 } }
  *       - { in: query, name: limit, schema: { type: integer, default: 50, maximum: 100 } }
  *       - { in: query, name: search, schema: { type: string } }
- *       - { in: query, name: status, schema: { type: string, enum: [borrowed, overdue, returned] } }
+ *       - { in: query, name: status, schema: { type: string, enum: [all, active, overdue, returned], default: all } }
  *     responses:
  *       200: { description: Book loans retrieved }
  */

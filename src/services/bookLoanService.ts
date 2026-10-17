@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, isNotNull, isNull, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { bookLoans, members, rolePolicies, users } from '@/db/schema';
 import type {
@@ -52,6 +52,23 @@ export async function createBookLoan(input: CreateBookLoanInput, createdBy: numb
   return getBookLoanById(created.id);
 }
 
+export function bookLoanStatusCondition(status: BookLoanQueryInput['status']) {
+  if (status === 'returned') return isNotNull(bookLoans.effectiveReturnDate);
+  if (status === 'active') {
+    return and(
+      isNull(bookLoans.effectiveReturnDate),
+      gte(bookLoans.expectedReturnDate, sql`current_date`)
+    );
+  }
+  if (status === 'overdue') {
+    return and(
+      isNull(bookLoans.effectiveReturnDate),
+      lt(bookLoans.expectedReturnDate, sql`current_date`)
+    );
+  }
+  return undefined;
+}
+
 export async function getBookLoans(query: BookLoanQueryInput) {
   const { offset, limit, search, status, sortBy, order } = query;
   const conditions = [];
@@ -62,27 +79,15 @@ export async function getBookLoans(query: BookLoanQueryInput) {
         ilike(bookLoans.bookTitle, `%${search}%`),
         ilike(members.firstName, `%${search}%`),
         ilike(members.lastName, `%${search}%`),
-        ilike(sql<string>`cast(${bookLoans.registrationNumber} as text)`, `%${search}%`)
+        ilike(sql<string>`cast(${bookLoans.registrationNumber} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.borrowingDate} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.expectedReturnDate} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.effectiveReturnDate} as text)`, `%${search}%`)
       )
     );
   }
-  if (status === 'returned') conditions.push(sql`${bookLoans.effectiveReturnDate} is not null`);
-  if (status === 'borrowed') {
-    conditions.push(
-      and(
-        sql`${bookLoans.effectiveReturnDate} is null`,
-        sql`${bookLoans.expectedReturnDate} >= current_date`
-      )
-    );
-  }
-  if (status === 'overdue') {
-    conditions.push(
-      and(
-        sql`${bookLoans.effectiveReturnDate} is null`,
-        lt(bookLoans.expectedReturnDate, sql`current_date`)
-      )
-    );
-  }
+  const statusCondition = bookLoanStatusCondition(status);
+  if (statusCondition) conditions.push(statusCondition);
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
   let countQuery = db

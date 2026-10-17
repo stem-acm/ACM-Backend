@@ -48,7 +48,7 @@ export const bookLoanQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional().default(0),
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),
   search: z.string().trim().optional().default(''),
-  status: z.enum(['borrowed', 'overdue', 'returned']).optional(),
+  status: z.enum(['all', 'active', 'overdue', 'returned']).optional().default('all'),
   sortBy: z
     .enum(['id', 'bookTitle', 'borrowingDate', 'expectedReturnDate', 'createdAt'])
     .optional()
