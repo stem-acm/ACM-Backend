@@ -62,7 +62,10 @@ export async function getBookLoans(query: BookLoanQueryInput) {
         ilike(bookLoans.bookTitle, `%${search}%`),
         ilike(members.firstName, `%${search}%`),
         ilike(members.lastName, `%${search}%`),
-        ilike(sql<string>`cast(${bookLoans.registrationNumber} as text)`, `%${search}%`)
+        ilike(sql<string>`cast(${bookLoans.registrationNumber} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.borrowingDate} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.expectedReturnDate} as text)`, `%${search}%`),
+        ilike(sql<string>`cast(${bookLoans.effectiveReturnDate} as text)`, `%${search}%`)
       )
     );
   }
