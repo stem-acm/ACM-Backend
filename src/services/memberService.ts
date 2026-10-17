@@ -8,7 +8,9 @@ import type {
 } from '@/schemas/memberSchema';
 import { signQRCode } from '@/utils/qrUtils';
 
-export async function createMember(input: CreateMemberInput) {
+type MemberPhotoInput = { profileImage?: string | null };
+
+export async function createMember(input: CreateMemberInput & MemberPhotoInput) {
   const [newMember] = await db.insert(members).values(input).returning();
 
   return newMember;
@@ -128,7 +130,7 @@ export async function getMemberByRegistrationNumber(registrationNumber: string) 
   return member || null;
 }
 
-export async function updateMember(id: number, input: UpdateMemberInput) {
+export async function updateMember(id: number, input: UpdateMemberInput & MemberPhotoInput) {
   const [updatedMember] = await db
     .update(members)
     .set({
@@ -143,6 +145,14 @@ export async function updateMember(id: number, input: UpdateMemberInput) {
   }
 
   return updatedMember;
+}
+
+export async function isMemberPhotoReferenced(reference: string) {
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(members)
+    .where(eq(members.profileImage, reference));
+  return Number(count ?? 0) > 0;
 }
 
 export function getQRCodeData(registrationNumber: number) {

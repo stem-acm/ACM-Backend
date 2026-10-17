@@ -10,6 +10,7 @@ import {
   update,
 } from '@/controllers/memberController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
+import { normalizeMemberMultipart, uploadMemberPhoto } from '@/middlewares/memberPhotoUpload';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { createMemberSchema, updateMemberSchema } from '@/schemas/memberSchema';
@@ -215,7 +216,7 @@ router.get(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -251,9 +252,9 @@ router.get(
  *                 format: date
  *                 pattern: '^\d{4}-\d{2}-\d{2}$'
  *                 example: '2024-01-01'
- *               profileImage:
+ *               photo:
  *                 type: string
- *                 example: /uploads/profile.jpg
+ *                 format: binary
  *     responses:
  *       201:
  *         description: Member created successfully
@@ -277,6 +278,8 @@ router.post(
   '/',
   authMiddleware,
   requirePermission('members.create'),
+  uploadMemberPhoto,
+  normalizeMemberMultipart,
   validateRequest(createMemberSchema),
   create
 );
@@ -337,7 +340,7 @@ router.get('/:id', authMiddleware, requirePermission('members.view'), getById);
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -362,8 +365,11 @@ router.get('/:id', authMiddleware, requirePermission('members.view'), getById);
  *               joinDate:
  *                 type: string
  *                 format: date
- *               profileImage:
+ *               photo:
  *                 type: string
+ *                 format: binary
+ *               removeProfileImage:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Member updated successfully
@@ -389,6 +395,8 @@ router.put(
   '/:id',
   authMiddleware,
   requirePermission('members.update'),
+  uploadMemberPhoto,
+  normalizeMemberMultipart,
   validateRequest(updateMemberSchema),
   update
 );

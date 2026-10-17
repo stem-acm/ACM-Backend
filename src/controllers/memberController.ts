@@ -9,18 +9,40 @@ import {
   getMembers,
   getQRCodeData,
   getStudyPlaces,
+  isMemberPhotoReferenced,
   updateMember,
 } from '@/services/memberService';
+import { deleteMemberPhoto, saveMemberPhoto } from '@/utils/memberPhoto';
+
+async function deletePhotoWhenUnused(reference: string | null | undefined) {
+  try {
+    if (reference && !(await isMemberPhotoReferenced(reference)))
+      await deleteMemberPhoto(reference);
+  } catch {
+    // The member mutation has already succeeded; a cleanup failure must not corrupt its response.
+  }
+}
+
+async function discardNewPhoto(reference: string | undefined) {
+  try {
+    await deleteMemberPhoto(reference);
+  } catch {
+    // Preserve the original member-operation error if filesystem cleanup also fails.
+  }
+}
 
 export async function create(req: AuthRequest, res: Response): Promise<void> {
+  let newPhoto: string | undefined;
   try {
-    const result = await createMember(req.body);
+    if (req.file) newPhoto = await saveMemberPhoto(req.file);
+    const result = await createMember({ ...req.body, profileImage: newPhoto ?? null });
     res.status(201).json({
       success: true,
       message: 'Member created successfully',
       data: result,
     });
   } catch (error) {
+    await discardNewPhoto(newPhoto);
     const message = error instanceof Error ? error.message : 'Failed to create member';
     res.status(400).json({
       success: false,
@@ -167,15 +189,25 @@ export async function getQRCode(req: Request, res: Response): Promise<void> {
 }
 
 export async function update(req: AuthRequest, res: Response): Promise<void> {
+  let newPhoto: string | undefined;
   try {
     const id = Number.parseInt(req.params.id, 10);
-    const result = await updateMember(id, req.body);
+    const currentMember = await getMemberById(id);
+    if (!currentMember) throw new Error('Member not found');
+    if (req.file) newPhoto = await saveMemberPhoto(req.file);
+    const removePhoto = res.locals.removeProfileImage === true;
+    const profileImage = newPhoto ?? (removePhoto ? null : currentMember.profileImage);
+    const result = await updateMember(id, { ...req.body, profileImage });
+    if (currentMember.profileImage && currentMember.profileImage !== profileImage) {
+      await deletePhotoWhenUnused(currentMember.profileImage);
+    }
     res.status(200).json({
       success: true,
       message: 'Member updated successfully',
       data: result,
     });
   } catch (error) {
+    await discardNewPhoto(newPhoto);
     const message = error instanceof Error ? error.message : 'Failed to update member';
     const statusCode = message === 'Member not found' ? 404 : 400;
     res.status(statusCode).json({
@@ -189,7 +221,9 @@ export async function update(req: AuthRequest, res: Response): Promise<void> {
 export async function remove(req: AuthRequest, res: Response): Promise<void> {
   try {
     const id = Number.parseInt(req.params.id, 10);
+    const currentMember = await getMemberById(id);
     await deleteMember(id);
+    await deletePhotoWhenUnused(currentMember?.profileImage);
     res.status(200).json({
       success: true,
       message: 'Member deleted successfully',
