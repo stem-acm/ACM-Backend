@@ -38,7 +38,7 @@ export const createMemberSchema = z.object({
     .nullable()
     .transform((val) => val?.trim() ?? null),
   joinDate: dateSchema.nullable(),
-  profileImage: z.string().nullable(),
+  profileImage: z.string().nullable().optional(),
 });
 
 export const updateMemberSchema = createMemberSchema.partial();

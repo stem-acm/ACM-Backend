@@ -19,6 +19,7 @@ import sseRoutes from '@/routes/sseRoutes';
 import volunteerRoutes from '@/routes/volunteerRoutes';
 import swaggerOptionsConfig from '@/swagger/options';
 import logger from '@/utils/logger';
+import { uploadsRoot } from '@/utils/memberPhoto';
 
 const app: Express = express();
 
@@ -57,7 +58,12 @@ app.use((req, _, next) => {
 // app.use(generalRateLimiter);
 
 // Static file serving
-app.use('/uploads', express.static('uploads'));
+app.use(
+  '/uploads',
+  express.static(uploadsRoot, {
+    setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+  })
+);
 
 // Health check
 app.use('/health', healthRoutes);
