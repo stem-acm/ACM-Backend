@@ -15,7 +15,8 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.QR_SECRET = 'test-secret';
 delete process.env.MAX_REQUEST_LIMIT;
 const { db } = await import('../src/db/drizzle');
-const { getBookLoanById, getBookLoans, getBookTitles } = await import(
+const { bookLoans } = await import('../src/db/schema');
+const { bookLoanStatusCondition, getBookLoanById, getBookLoans, getBookTitles } = await import(
   '../src/services/bookLoanService'
 );
 process.chdir(originalDirectory);
@@ -78,6 +79,28 @@ test('creation accepts frontend fields without relations and ignores client-supp
     createBookLoanSchema.parse({ ...input, createdBy: 999, User: { id: 999 } }),
     input
   );
+});
+
+test('status query validation accepts the public contract and rejects unknown values', () => {
+  for (const status of ['all', 'active', 'overdue', 'returned']) {
+    assert.equal(bookLoanQuerySchema.parse({ status }).status, status);
+  }
+  assert.equal(bookLoanQuerySchema.parse({}).status, 'all');
+  assert.equal(bookLoanQuerySchema.safeParse({ status: 'borrowed' }).success, false);
+  assert.equal(bookLoanQuerySchema.safeParse({ status: 'unknown' }).success, false);
+});
+
+test('status conditions classify loans from date columns at the database calendar date', () => {
+  const sqlFor = (status: 'active' | 'overdue' | 'returned') =>
+    db.select({ id: bookLoans.id }).from(bookLoans).where(bookLoanStatusCondition(status)).toSQL()
+      .sql;
+
+  assert.equal(bookLoanStatusCondition('all'), undefined);
+  assert.match(sqlFor('active'), /effective_return_date" is null/);
+  assert.match(sqlFor('active'), /expected_return_date" >= current_date/);
+  assert.match(sqlFor('overdue'), /effective_return_date" is null/);
+  assert.match(sqlFor('overdue'), /expected_return_date" < current_date/);
+  assert.match(sqlFor('returned'), /effective_return_date" is not null/);
 });
 
 test('title suggestions use distinct sorted titles and escape literal search characters', async () => {
