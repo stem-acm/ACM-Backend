@@ -865,3 +865,8 @@ Docker troubleshooting: use `compose ps`, service logs, file logs, and `docker i
 - [Node.js 22 distribution files](https://nodejs.org/dist/latest-v22.x/)
 - [Nginx proxy directives and buffering](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
 - [Certbot Nginx installation and renewal](https://certbot.eff.org/instructions?os=snap&tab=standard&ws=nginx)
+
+## Deployment in use
+
+Production runs on the Hostinger VPS from the private repository [`stem-acm/infra`](https://github.com/stem-acm/infra) (directory `ipass/`): GitHub Actions builds `Dockerfile.prod`, pushes `ghcr.io/stem-acm/acm-backend` and runs `scripts/deploy.sh` on each push to `master`.
+The two deployment paths above stay as reference.

@@ -10,7 +10,7 @@ const swaggerOptions: Options = {
     },
     servers: [
       {
-        url: 'http://localhost:5002',
+        url: process.env.PUBLIC_URL || 'http://localhost:3000',
       },
     ],
     components: {

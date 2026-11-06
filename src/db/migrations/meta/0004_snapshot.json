@@ -103,12 +103,8 @@
           "name": "activities_created_by_users_id_fk",
           "tableFrom": "activities",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -186,12 +182,8 @@
           "name": "book_loans_registration_number_members_registration_number_fk",
           "tableFrom": "book_loans",
           "tableTo": "members",
-          "columnsFrom": [
-            "registration_number"
-          ],
-          "columnsTo": [
-            "registration_number"
-          ],
+          "columnsFrom": ["registration_number"],
+          "columnsTo": ["registration_number"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -199,12 +191,8 @@
           "name": "book_loans_created_by_users_id_fk",
           "tableFrom": "book_loans",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -277,12 +265,8 @@
           "name": "checkins_registration_number_members_registration_number_fk",
           "tableFrom": "checkins",
           "tableTo": "members",
-          "columnsFrom": [
-            "registration_number"
-          ],
-          "columnsTo": [
-            "registration_number"
-          ],
+          "columnsFrom": ["registration_number"],
+          "columnsTo": ["registration_number"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -290,12 +274,8 @@
           "name": "checkins_activity_id_activities_id_fk",
           "tableFrom": "checkins",
           "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["activity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -518,16 +498,12 @@
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -595,12 +571,8 @@
           "name": "volunteers_registration_number_members_registration_number_fk",
           "tableFrom": "volunteers",
           "tableTo": "members",
-          "columnsFrom": [
-            "registration_number"
-          ],
-          "columnsTo": [
-            "registration_number"
-          ],
+          "columnsFrom": ["registration_number"],
+          "columnsTo": ["registration_number"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -608,12 +580,8 @@
           "name": "volunteers_created_by_users_id_fk",
           "tableFrom": "volunteers",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -629,42 +597,22 @@
     "public.day_of_week": {
       "name": "day_of_week",
       "schema": "public",
-      "values": [
-        "everyday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday"
-      ]
+      "values": ["everyday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
     },
     "public.gender": {
       "name": "gender",
       "schema": "public",
-      "values": [
-        "male",
-        "female"
-      ]
+      "values": ["male", "female"]
     },
     "public.occupation": {
       "name": "occupation",
       "schema": "public",
-      "values": [
-        "student",
-        "unemployed",
-        "employee",
-        "entrepreneur"
-      ]
+      "values": ["student", "unemployed", "employee", "entrepreneur"]
     },
     "public.title": {
       "name": "title",
       "schema": "public",
-      "values": [
-        "Miss",
-        "Mr",
-        "Mrs"
-      ]
+      "values": ["Miss", "Mr", "Mrs"]
     }
   },
   "schemas": {},
