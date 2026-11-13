@@ -20,7 +20,7 @@ export async function create(req: AuthRequest, res: Response): Promise<void> {
       return;
     }
 
-    const result = await createVolunteer(req.body, req.user.id);
+    const result = await createVolunteer(req.body, req.user);
     res.status(201).json({
       success: true,
       message: 'Volunteer created successfully',
@@ -87,8 +87,12 @@ export async function getById(req: Request, res: Response): Promise<void> {
 
 export async function update(req: AuthRequest, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     const id = Number.parseInt(req.params.id, 10);
-    const result = await updateVolunteer(id, req.body);
+    const result = await updateVolunteer(id, req.body, req.user);
     res.status(200).json({
       success: true,
       message: 'Volunteer updated successfully',
@@ -107,8 +111,12 @@ export async function update(req: AuthRequest, res: Response): Promise<void> {
 
 export async function remove(req: AuthRequest, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     const id = Number.parseInt(req.params.id, 10);
-    await deleteVolunteer(id);
+    await deleteVolunteer(id, req.user);
     res.status(200).json({
       success: true,
       message: 'Volunteer deleted successfully',
