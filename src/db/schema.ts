@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -138,6 +139,32 @@ export const bookLoans = pgTable('book_loans', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Audit logs: one row per logged insert, update or delete. Rows are only added, never changed.
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: serial('id').primaryKey(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    actorId: integer('actor_id').notNull(),
+    actorUsername: varchar('actor_username', { length: 255 }).notNull(),
+    actorRole: varchar('actor_role', { length: 20 }).notNull(),
+    type: varchar('type', { length: 64 }).notNull(),
+    entity: varchar('entity', { length: 64 }).notNull(),
+    entityId: varchar('entity_id', { length: 64 }).notNull(),
+    entityLabel: varchar('entity_label', { length: 1024 }).notNull(),
+    parentEntity: varchar('parent_entity', { length: 64 }),
+    parentId: varchar('parent_id', { length: 64 }),
+    parentLabel: varchar('parent_label', { length: 1024 }),
+    changes: jsonb('changes').$type<Record<string, unknown>>().notNull(),
+  },
+  (table) => [
+    index('audit_logs_created_at_idx').on(table.createdAt),
+    index('audit_logs_type_idx').on(table.type),
+    index('audit_logs_entity_entity_id_idx').on(table.entity, table.entityId),
+    index('audit_logs_actor_id_idx').on(table.actorId),
+  ]
+);
+
 // Type exports for TypeScript
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -156,3 +183,6 @@ export type NewVolunteer = typeof volunteers.$inferInsert;
 
 export type BookLoan = typeof bookLoans.$inferSelect;
 export type NewBookLoan = typeof bookLoans.$inferInsert;
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;

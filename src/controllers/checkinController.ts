@@ -78,8 +78,12 @@ export async function getByRegistrationNumber(req: Request, res: Response): Prom
 
 export async function remove(req: AuthRequest, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     const id = Number.parseInt(req.params.id, 10);
-    await deleteCheckin(id);
+    await deleteCheckin(id, req.user);
     res.status(200).json({
       success: true,
       message: 'Checkin deleted successfully',

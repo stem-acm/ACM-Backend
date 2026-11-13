@@ -6,6 +6,14 @@ import type {
   CreateBookLoanInput,
   UpdateBookLoanInput,
 } from '@/schemas/bookLoanSchema';
+import {
+  type Actor,
+  diffRows,
+  memberLabel,
+  snapshot,
+  type Transaction,
+  writeLog,
+} from '@/services/auditService';
 
 const loanSelection = {
   book_loans: bookLoans,
@@ -43,12 +51,32 @@ async function ensureMemberExists(registrationNumber: number) {
   if (!member) throw new Error('Member not found');
 }
 
-export async function createBookLoan(input: CreateBookLoanInput, createdBy: number) {
+/** "Book title, LASTNAME Firstname". */
+async function bookLoanLabel(tx: Transaction, loan: typeof bookLoans.$inferSelect) {
+  const [member] = await tx
+    .select({ firstName: members.firstName, lastName: members.lastName })
+    .from(members)
+    .where(eq(members.registrationNumber, loan.registrationNumber))
+    .limit(1);
+  return member ? `${loan.bookTitle}, ${memberLabel(member)}` : loan.bookTitle;
+}
+
+export async function createBookLoan(input: CreateBookLoanInput, actor: Actor) {
   await ensureMemberExists(input.registrationNumber);
-  const [created] = await db
-    .insert(bookLoans)
-    .values({ ...input, createdBy })
-    .returning();
+  const created = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(bookLoans)
+      .values({ ...input, createdBy: actor.id })
+      .returning();
+    await writeLog(tx, actor, {
+      type: 'book_loan.created',
+      entity: 'book_loans',
+      entityId: row.id,
+      entityLabel: await bookLoanLabel(tx, row),
+      changes: snapshot(row),
+    });
+    return row;
+  });
   return getBookLoanById(created.id);
 }
 
@@ -134,7 +162,13 @@ export async function getBookLoanById(id: number) {
   return row ? withRelations(row) : null;
 }
 
-export async function updateBookLoan(id: number, input: UpdateBookLoanInput) {
+/** Applies an update and writes exactly one log, of the given type, if a field changes. */
+async function changeBookLoan(
+  id: number,
+  input: UpdateBookLoanInput,
+  actor: Actor,
+  type: 'book_loan.updated' | 'book_loan.returned'
+) {
   const existing = await getBookLoanById(id);
   if (!existing) throw new Error('Book loan not found');
   if (input.registrationNumber !== undefined) await ensureMemberExists(input.registrationNumber);
@@ -152,15 +186,34 @@ export async function updateBookLoan(id: number, input: UpdateBookLoanInput) {
     throw new Error('Effective return date cannot be before borrowing date');
   }
 
-  await db
-    .update(bookLoans)
-    .set({ ...input, updatedAt: new Date() })
-    .where(eq(bookLoans.id, id));
+  await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(bookLoans).where(eq(bookLoans.id, id)).limit(1);
+    if (!before) throw new Error('Book loan not found');
+    const [after] = await tx
+      .update(bookLoans)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(bookLoans.id, id))
+      .returning();
+    const changes = diffRows(before, after);
+    if (Object.keys(changes).length > 0) {
+      await writeLog(tx, actor, {
+        type,
+        entity: 'book_loans',
+        entityId: after.id,
+        entityLabel: await bookLoanLabel(tx, after),
+        changes,
+      });
+    }
+  });
   return getBookLoanById(id);
 }
 
-export async function returnBookLoan(id: number, effectiveReturnDate: string) {
-  return updateBookLoan(id, { effectiveReturnDate });
+export async function updateBookLoan(id: number, input: UpdateBookLoanInput, actor: Actor) {
+  return changeBookLoan(id, input, actor, 'book_loan.updated');
+}
+
+export async function returnBookLoan(id: number, effectiveReturnDate: string, actor: Actor) {
+  return changeBookLoan(id, { effectiveReturnDate }, actor, 'book_loan.returned');
 }
 
 export async function getBookTitles(search: string, limit: number) {

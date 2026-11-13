@@ -43,6 +43,13 @@
       "when": 1792155705515,
       "tag": "0005_nullable_book_loan_creator",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794581112722,
+      "tag": "0006_pretty_whizzer",
+      "breakpoints": true
     }
   ]
 }
