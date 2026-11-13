@@ -40,9 +40,11 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Swagger options
-const specs = swaggerJsdoc(swaggerOptionsConfig);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+// Swagger UI (not served in production)
+if (config.nodeEnv !== 'production') {
+  const specs = swaggerJsdoc(swaggerOptionsConfig);
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+}
 
 // Request logging
 app.use((req, _, next) => {
