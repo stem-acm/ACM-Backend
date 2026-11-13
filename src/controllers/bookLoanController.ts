@@ -27,7 +27,7 @@ export async function create(req: AuthRequest, res: Response): Promise<void> {
       res.status(401).json({ success: false, message: 'Unauthorized', data: null });
       return;
     }
-    const result = await createBookLoan(req.body, req.user.id);
+    const result = await createBookLoan(req.body, req.user);
     res
       .status(201)
       .json({ success: true, message: 'Book loan created successfully', data: result });
@@ -66,9 +66,13 @@ export async function getById(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function update(req: Request, res: Response): Promise<void> {
+export async function update(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const result = await updateBookLoan(requestId(req), req.body);
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
+    const result = await updateBookLoan(requestId(req), req.body, req.user);
     res
       .status(200)
       .json({ success: true, message: 'Book loan updated successfully', data: result });
@@ -78,9 +82,13 @@ export async function update(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function markReturned(req: Request, res: Response): Promise<void> {
+export async function markReturned(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const result = await returnBookLoan(requestId(req), req.body.effectiveReturnDate);
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
+    const result = await returnBookLoan(requestId(req), req.body.effectiveReturnDate, req.user);
     res.status(200).json({ success: true, message: 'Book returned successfully', data: result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to return book';

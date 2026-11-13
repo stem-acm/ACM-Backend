@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins, members } from '@/db/schema';
 import type { CheckinQueryInput, CreateCheckinInput } from '@/schemas/checkinSchema';
+import { type Actor, memberLabel, snapshot, writeLog } from '@/services/auditService';
 import { getCheckinSlot, validateCheckinTime } from '@/utils/checkinUtils';
 import { verifyQRCode } from '@/utils/qrUtils';
 
@@ -220,12 +221,37 @@ export async function getCheckinById(id: number) {
   return checkin || null;
 }
 
-export async function deleteCheckin(id: number) {
-  const [deletedCheckin] = await db.delete(checkins).where(eq(checkins.id, id)).returning();
+export async function deleteCheckin(id: number, actor: Actor) {
+  return db.transaction(async (tx) => {
+    // Resolve the label before the row is deleted.
+    const [names] = await tx
+      .select({
+        firstName: members.firstName,
+        lastName: members.lastName,
+        activityName: activities.name,
+      })
+      .from(checkins)
+      .innerJoin(members, eq(checkins.registrationNumber, members.registrationNumber))
+      .innerJoin(activities, eq(checkins.activityId, activities.id))
+      .where(eq(checkins.id, id))
+      .limit(1);
 
-  if (!deletedCheckin) {
-    throw new Error('Check-in not found');
-  }
+    const [deletedCheckin] = await tx.delete(checkins).where(eq(checkins.id, id)).returning();
 
-  return deletedCheckin;
+    if (!deletedCheckin) {
+      throw new Error('Check-in not found');
+    }
+
+    await writeLog(tx, actor, {
+      type: 'checkin.deleted',
+      entity: 'checkins',
+      entityId: deletedCheckin.id,
+      entityLabel: names
+        ? `${memberLabel(names)}, ${names.activityName}`
+        : String(deletedCheckin.id),
+      changes: snapshot(deletedCheckin),
+    });
+
+    return deletedCheckin;
+  });
 }
