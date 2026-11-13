@@ -31,7 +31,11 @@ export async function login(req: Request, res: Response): Promise<void> {
 
 export async function register(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const result = await registerUser(req.body);
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required', data: null });
+      return;
+    }
+    const result = await registerUser(req.body, req.user);
     res.status(201).json({
       success: true,
       message: 'User created successfully',
@@ -87,7 +91,7 @@ export async function updateProfile(req: AuthRequest, res: Response): Promise<vo
       res.status(401).json({ success: false, message: 'Authentication required', data: null });
       return;
     }
-    const user = await updateOwnProfile(req.user.id, req.body);
+    const user = await updateOwnProfile(req.user.id, req.body, req.user);
     res.json({ success: true, message: 'Profile updated', data: user });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Profile update failed';

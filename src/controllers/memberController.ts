@@ -34,8 +34,12 @@ async function discardNewPhoto(reference: string | undefined) {
 export async function create(req: AuthRequest, res: Response): Promise<void> {
   let newPhoto: string | undefined;
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     if (req.file) newPhoto = await saveMemberPhoto(req.file);
-    const result = await createMember({ ...req.body, profileImage: newPhoto ?? null });
+    const result = await createMember({ ...req.body, profileImage: newPhoto ?? null }, req.user);
     res.status(201).json({
       success: true,
       message: 'Member created successfully',
@@ -191,13 +195,17 @@ export async function getQRCode(req: Request, res: Response): Promise<void> {
 export async function update(req: AuthRequest, res: Response): Promise<void> {
   let newPhoto: string | undefined;
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     const id = Number.parseInt(req.params.id, 10);
     const currentMember = await getMemberById(id);
     if (!currentMember) throw new Error('Member not found');
     if (req.file) newPhoto = await saveMemberPhoto(req.file);
     const removePhoto = res.locals.removeProfileImage === true;
     const profileImage = newPhoto ?? (removePhoto ? null : currentMember.profileImage);
-    const result = await updateMember(id, { ...req.body, profileImage });
+    const result = await updateMember(id, { ...req.body, profileImage }, req.user);
     if (currentMember.profileImage && currentMember.profileImage !== profileImage) {
       await deletePhotoWhenUnused(currentMember.profileImage);
     }
@@ -220,9 +228,13 @@ export async function update(req: AuthRequest, res: Response): Promise<void> {
 
 export async function remove(req: AuthRequest, res: Response): Promise<void> {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
     const id = Number.parseInt(req.params.id, 10);
     const currentMember = await getMemberById(id);
-    await deleteMember(id);
+    await deleteMember(id, req.user);
     await deletePhotoWhenUnused(currentMember?.profileImage);
     res.status(200).json({
       success: true,

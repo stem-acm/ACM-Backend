@@ -1,19 +1,28 @@
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
-import { checkins, members, volunteers } from '@/db/schema';
+import { activities, checkins, members, volunteers } from '@/db/schema';
 import type {
   CreateMemberInput,
   MemberQueryInput,
   UpdateMemberInput,
 } from '@/schemas/memberSchema';
+import { type Actor, diffRows, memberLabel, snapshot, writeLog } from '@/services/auditService';
 import { signQRCode } from '@/utils/qrUtils';
 
 type MemberPhotoInput = { profileImage?: string | null };
 
-export async function createMember(input: CreateMemberInput & MemberPhotoInput) {
-  const [newMember] = await db.insert(members).values(input).returning();
-
-  return newMember;
+export async function createMember(input: CreateMemberInput & MemberPhotoInput, actor: Actor) {
+  return db.transaction(async (tx) => {
+    const [newMember] = await tx.insert(members).values(input).returning();
+    await writeLog(tx, actor, {
+      type: 'member.created',
+      entity: 'members',
+      entityId: newMember.registrationNumber,
+      entityLabel: memberLabel(newMember),
+      changes: snapshot(newMember),
+    });
+    return newMember;
+  });
 }
 
 export async function getStudyPlaces() {
@@ -130,21 +139,46 @@ export async function getMemberByRegistrationNumber(registrationNumber: string) 
   return member || null;
 }
 
-export async function updateMember(id: number, input: UpdateMemberInput & MemberPhotoInput) {
-  const [updatedMember] = await db
-    .update(members)
-    .set({
-      ...input,
-      updatedAt: new Date(),
-    })
-    .where(eq(members.registrationNumber, id))
-    .returning();
+export async function updateMember(
+  id: number,
+  input: UpdateMemberInput & MemberPhotoInput,
+  actor: Actor
+) {
+  return db.transaction(async (tx) => {
+    const [before] = await tx
+      .select()
+      .from(members)
+      .where(eq(members.registrationNumber, id))
+      .limit(1);
+    if (!before) {
+      throw new Error('Member not found');
+    }
 
-  if (!updatedMember) {
-    throw new Error('Member not found');
-  }
+    const [updatedMember] = await tx
+      .update(members)
+      .set({
+        ...input,
+        updatedAt: new Date(),
+      })
+      .where(eq(members.registrationNumber, id))
+      .returning();
 
-  return updatedMember;
+    if (!updatedMember) {
+      throw new Error('Member not found');
+    }
+
+    const changes = diffRows(before, updatedMember);
+    if (Object.keys(changes).length > 0) {
+      await writeLog(tx, actor, {
+        type: 'member.updated',
+        entity: 'members',
+        entityId: updatedMember.registrationNumber,
+        entityLabel: memberLabel(updatedMember),
+        changes,
+      });
+    }
+    return updatedMember;
+  });
 }
 
 export async function isMemberPhotoReferenced(reference: string) {
@@ -159,21 +193,80 @@ export function getQRCodeData(registrationNumber: number) {
   return signQRCode(registrationNumber);
 }
 
-export async function deleteMember(id: number) {
-  // Delete associated check-ins
-  await db.delete(checkins).where(eq(checkins.registrationNumber, id));
+export async function deleteMember(id: number, actor: Actor) {
+  return db.transaction(async (tx) => {
+    const [member] = await tx
+      .select()
+      .from(members)
+      .where(eq(members.registrationNumber, id))
+      .limit(1);
+    if (!member) {
+      throw new Error('Member not found');
+    }
+    const parent = {
+      parentEntity: 'members' as const,
+      parentId: member.registrationNumber,
+      parentLabel: memberLabel(member),
+    };
 
-  // Delete associated volunteer records
-  await db.delete(volunteers).where(eq(volunteers.registrationNumber, id));
+    // Resolve the labels of the linked rows before they are deleted.
+    const checkinActivities = await tx
+      .select({ id: checkins.id, activityName: activities.name })
+      .from(checkins)
+      .innerJoin(activities, eq(checkins.activityId, activities.id))
+      .where(eq(checkins.registrationNumber, id));
+    const activityNames = new Map(checkinActivities.map((row) => [row.id, row.activityName]));
 
-  const [deletedMember] = await db
-    .delete(members)
-    .where(eq(members.registrationNumber, id))
-    .returning();
+    // Delete associated check-ins
+    const deletedCheckins = await tx
+      .delete(checkins)
+      .where(eq(checkins.registrationNumber, id))
+      .returning();
 
-  if (!deletedMember) {
-    throw new Error('Member not found');
-  }
+    // Delete associated volunteer records
+    const deletedVolunteers = await tx
+      .delete(volunteers)
+      .where(eq(volunteers.registrationNumber, id))
+      .returning();
 
-  return deletedMember;
+    const [deletedMember] = await tx
+      .delete(members)
+      .where(eq(members.registrationNumber, id))
+      .returning();
+
+    if (!deletedMember) {
+      throw new Error('Member not found');
+    }
+
+    for (const checkin of deletedCheckins) {
+      await writeLog(tx, actor, {
+        type: 'checkin.cascade_deleted',
+        entity: 'checkins',
+        entityId: checkin.id,
+        entityLabel: `${parent.parentLabel}, ${activityNames.get(checkin.id) ?? ''}`,
+        ...parent,
+        changes: snapshot(checkin),
+      });
+    }
+    for (const volunteer of deletedVolunteers) {
+      await writeLog(tx, actor, {
+        type: 'volunteer.cascade_deleted',
+        entity: 'volunteers',
+        entityId: volunteer.id,
+        entityLabel: parent.parentLabel,
+        ...parent,
+        changes: snapshot(volunteer),
+      });
+    }
+    // Written last so that, newest first, the member comes before its linked rows.
+    await writeLog(tx, actor, {
+      type: 'member.deleted',
+      entity: 'members',
+      entityId: deletedMember.registrationNumber,
+      entityLabel: parent.parentLabel,
+      changes: snapshot(deletedMember),
+    });
+
+    return deletedMember;
+  });
 }

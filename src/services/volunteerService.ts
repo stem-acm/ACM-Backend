@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { members, volunteers } from '@/db/schema';
 import type {
@@ -6,34 +6,61 @@ import type {
   UpdateVolunteerInput,
   VolunteerQueryInput,
 } from '@/schemas/volunteerSchema';
+import {
+  type Actor,
+  diffRows,
+  memberLabel,
+  snapshot,
+  type Transaction,
+  VOLUNTEER_WITHOUT_MEMBER_LABEL,
+  writeLog,
+} from '@/services/auditService';
 
-export async function createVolunteer(input: CreateVolunteerInput, createdBy: number) {
-  if (Array.isArray(input)) {
-    const allVolunteers: Array<{
-      registrationNumber: number | null;
-      joinDate: string | null;
-      role: string | null;
-      expirationDate: string | null;
-      createdBy: number;
-    }> = input.map((volunteer) => ({
-      ...volunteer,
-      createdBy,
-    }));
+/** Labels of volunteer rows: the member name, or a constant text without a member. */
+async function volunteerLabels(tx: Transaction, registrationNumbers: (number | null)[]) {
+  const numbers = [...new Set(registrationNumbers.filter((n): n is number => n !== null))];
+  const rows = numbers.length
+    ? await tx
+        .select({
+          registrationNumber: members.registrationNumber,
+          firstName: members.firstName,
+          lastName: members.lastName,
+        })
+        .from(members)
+        .where(inArray(members.registrationNumber, numbers))
+    : [];
+  const names = new Map(rows.map((row) => [row.registrationNumber, memberLabel(row)]));
+  return (registrationNumber: number | null) =>
+    (registrationNumber !== null ? names.get(registrationNumber) : undefined) ??
+    VOLUNTEER_WITHOUT_MEMBER_LABEL;
+}
 
-    const newVolunteers = await db.insert(volunteers).values(allVolunteers).returning();
+export async function createVolunteer(input: CreateVolunteerInput, actor: Actor) {
+  const rows = (Array.isArray(input) ? input : [input]).map((volunteer) => ({
+    ...volunteer,
+    createdBy: actor.id,
+  }));
 
-    return newVolunteers;
-  } else {
-    const [newVolunteer] = await db
-      .insert(volunteers)
-      .values({
-        ...input,
-        createdBy,
-      })
-      .returning();
+  const newVolunteers = await db.transaction(async (tx) => {
+    const created = await tx.insert(volunteers).values(rows).returning();
+    const labelOf = await volunteerLabels(
+      tx,
+      created.map((volunteer) => volunteer.registrationNumber)
+    );
+    // One log for each inserted row.
+    for (const volunteer of created) {
+      await writeLog(tx, actor, {
+        type: 'volunteer.created',
+        entity: 'volunteers',
+        entityId: volunteer.id,
+        entityLabel: labelOf(volunteer.registrationNumber),
+        changes: snapshot(volunteer),
+      });
+    }
+    return created;
+  });
 
-    return newVolunteer;
-  }
+  return Array.isArray(input) ? newVolunteers : newVolunteers[0];
 }
 
 export async function getVolunteers(query: VolunteerQueryInput) {
@@ -120,7 +147,7 @@ export async function getVolunteerById(id: number) {
   return result ? { ...result.volunteers, Member: result.members } : null;
 }
 
-export async function updateVolunteer(id: number, input: UpdateVolunteerInput) {
+export async function updateVolunteer(id: number, input: UpdateVolunteerInput, actor: Actor) {
   // Build update object with only defined fields
   const updateData: Partial<UpdateVolunteerInput> & { updatedAt: Date } = {
     updatedAt: new Date(),
@@ -131,25 +158,60 @@ export async function updateVolunteer(id: number, input: UpdateVolunteerInput) {
   if (input.joinDate !== undefined) updateData.joinDate = input.joinDate;
   if (input.expirationDate !== undefined) updateData.expirationDate = input.expirationDate;
 
-  const [updatedVolunteer] = await db
-    .update(volunteers)
-    .set(updateData)
-    .where(eq(volunteers.id, id))
-    .returning();
+  return db.transaction(async (tx) => {
+    const [before] = await tx.select().from(volunteers).where(eq(volunteers.id, id)).limit(1);
+    if (!before) {
+      throw new Error('Volunteer not found');
+    }
 
-  if (!updatedVolunteer) {
-    throw new Error('Volunteer not found');
-  }
+    const [updatedVolunteer] = await tx
+      .update(volunteers)
+      .set(updateData)
+      .where(eq(volunteers.id, id))
+      .returning();
 
-  return updatedVolunteer;
+    if (!updatedVolunteer) {
+      throw new Error('Volunteer not found');
+    }
+
+    const changes = diffRows(before, updatedVolunteer);
+    if (Object.keys(changes).length > 0) {
+      const labelOf = await volunteerLabels(tx, [updatedVolunteer.registrationNumber]);
+      await writeLog(tx, actor, {
+        type: 'volunteer.updated',
+        entity: 'volunteers',
+        entityId: updatedVolunteer.id,
+        entityLabel: labelOf(updatedVolunteer.registrationNumber),
+        changes,
+      });
+    }
+    return updatedVolunteer;
+  });
 }
 
-export async function deleteVolunteer(id: number) {
-  const [deletedVolunteer] = await db.delete(volunteers).where(eq(volunteers.id, id)).returning();
+export async function deleteVolunteer(id: number, actor: Actor) {
+  return db.transaction(async (tx) => {
+    const [before] = await tx.select().from(volunteers).where(eq(volunteers.id, id)).limit(1);
+    if (!before) {
+      throw new Error('Volunteer not found');
+    }
+    // Resolve the label before the row is deleted.
+    const labelOf = await volunteerLabels(tx, [before.registrationNumber]);
 
-  if (!deletedVolunteer) {
-    throw new Error('Volunteer not found');
-  }
+    const [deletedVolunteer] = await tx.delete(volunteers).where(eq(volunteers.id, id)).returning();
 
-  return deletedVolunteer;
+    if (!deletedVolunteer) {
+      throw new Error('Volunteer not found');
+    }
+
+    await writeLog(tx, actor, {
+      type: 'volunteer.deleted',
+      entity: 'volunteers',
+      entityId: deletedVolunteer.id,
+      entityLabel: labelOf(deletedVolunteer.registrationNumber),
+      changes: snapshot(deletedVolunteer),
+    });
+
+    return deletedVolunteer;
+  });
 }
