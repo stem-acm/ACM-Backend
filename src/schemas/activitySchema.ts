@@ -4,7 +4,7 @@ export const createActivitySchema = z.object({
   name: z
     .string()
     .min(1, 'Activity name is required')
-    .max(255, 'Activity name must be less than 255 characters'),
+    .max(40, 'Activity name must be 40 characters or fewer.'),
   description: z.string().optional(),
   image: z.string().optional(),
   emoji: z.string().max(10).optional(),
