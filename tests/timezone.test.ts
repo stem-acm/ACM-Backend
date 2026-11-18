@@ -308,13 +308,16 @@ const [activity] = await testDb
   .values({ name: 'English Club', startTime: '14:00', endTime: '16:00', createdBy: admin.actor.id })
   .returning();
 
+/** A scan at the instant `checkInTime`, as if the server clock showed that time. */
 function scan(checkInTime: string) {
-  return createCheckin({
-    registrationNumber: member.registrationNumber,
-    signature: signQRCode(member.registrationNumber).signature,
-    activityId: activity.id,
-    checkInTime,
-  });
+  return createCheckin(
+    {
+      registrationNumber: member.registrationNumber,
+      signature: signQRCode(member.registrationNumber).signature,
+      activityId: activity.id,
+    },
+    new Date(checkInTime)
+  );
 }
 
 async function clearCheckins() {

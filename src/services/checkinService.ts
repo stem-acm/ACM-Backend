@@ -8,7 +8,12 @@ import { getCheckinSchedule } from '@/services/checkinScheduleService';
 import { getCheckinSlot, getZoneDayBounds, validateCheckinTime } from '@/utils/checkinUtils';
 import { verifyQRCode } from '@/utils/qrUtils';
 
-export async function createCheckin(input: CreateCheckinInput) {
+/**
+ * Creates a check-in at `now`. The HTTP route always passes the server clock: the
+ * `checkInTime` of a request is not used, so a client cannot scan outside the schedule by
+ * sending another time. Tests pass `now` to scan at a chosen instant.
+ */
+export async function createCheckin(input: CreateCheckinInput, now: Date = new Date()) {
   // Verify QR code signature to prevent forged badges
   if (!verifyQRCode({ registrationNumber: input.registrationNumber, signature: input.signature })) {
     throw new Error('Invalid QR code signature');
@@ -36,7 +41,11 @@ export async function createCheckin(input: CreateCheckinInput) {
     throw new Error('Activity not found');
   }
 
-  const checkInTime = input.checkInTime ? new Date(input.checkInTime) : new Date();
+  const checkInTime = now;
+  const checkOutTime = input.checkOutTime ? new Date(input.checkOutTime) : undefined;
+  if (checkOutTime && checkOutTime <= checkInTime) {
+    throw new Error('Check-out time must be after check-in time');
+  }
 
   // Read the schedule and the time zone once: the new scan and the earlier scans use the
   // same ones.
@@ -77,7 +86,7 @@ export async function createCheckin(input: CreateCheckinInput) {
       registrationNumber: member.registrationNumber,
       activityId: input.activityId,
       checkInTime,
-      checkOutTime: input.checkOutTime ? new Date(input.checkOutTime) : undefined,
+      checkOutTime,
       visitReason: input.visitReason,
     })
     .returning();

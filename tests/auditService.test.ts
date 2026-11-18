@@ -449,12 +449,14 @@ test('deleteCheckin writes checkin.deleted; creating a check-in writes no log', 
   const activity = await newActivity('Kiosk');
   let checkinId = 0;
   const created = await logsOf(async () => {
-    const checkin = await createCheckin({
-      registrationNumber: member.registrationNumber,
-      signature: signQRCode(member.registrationNumber).signature,
-      activityId: activity.id,
-      checkInTime: '2026-11-10T06:00:00.000Z', // Tuesday 09:00 in Mahajanga
-    });
+    const checkin = await createCheckin(
+      {
+        registrationNumber: member.registrationNumber,
+        signature: signQRCode(member.registrationNumber).signature,
+        activityId: activity.id,
+      },
+      new Date('2026-11-10T06:00:00.000Z') // Tuesday 09:00 in Mahajanga
+    );
     checkinId = checkin.id;
   });
   assert.deepEqual(created, []);

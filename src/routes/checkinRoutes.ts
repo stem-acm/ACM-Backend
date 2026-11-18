@@ -18,7 +18,10 @@ const router: Router = Router();
  * /api/checkins:
  *   post:
  *     summary: Create a new check-in
- *     description: Create a new check-in record for a member and activity
+ *     description: >
+ *       Create a new check-in record for a member and activity. The check-in time is the
+ *       server clock: it must be inside a slot of the check-in schedule. The checkOutTime must
+ *       be after it.
  *     tags: [Check-ins]
  *     requestBody:
  *       required: true
@@ -36,10 +39,6 @@ const router: Router = Router();
  *               activityId:
  *                 type: integer
  *                 example: 1
- *               checkInTime:
- *                 type: string
- *                 format: date-time
- *                 example: '2024-01-01T10:00:00Z'
  *               checkOutTime:
  *                 type: string
  *                 format: date-time

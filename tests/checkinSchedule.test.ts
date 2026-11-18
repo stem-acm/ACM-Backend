@@ -323,13 +323,16 @@ const [activity] = await testDb
   .values({ name: 'English Club', startTime: '14:00', endTime: '16:00', createdBy: admin.actor.id })
   .returning();
 
+/** A scan at the instant `checkInTime`, as if the server clock showed that time. */
 function scan(checkInTime: string) {
-  return createCheckin({
-    registrationNumber: member.registrationNumber,
-    signature: signQRCode(member.registrationNumber).signature,
-    activityId: activity.id,
-    checkInTime,
-  });
+  return createCheckin(
+    {
+      registrationNumber: member.registrationNumber,
+      signature: signQRCode(member.registrationNumber).signature,
+      activityId: activity.id,
+    },
+    new Date(checkInTime)
+  );
 }
 
 async function clearCheckins() {
@@ -375,6 +378,60 @@ test('one scan per slot: the same slot is refused, another slot is accepted', as
   // Wednesday 08:30 is another day.
   await scan('2026-11-11T05:30:00.000Z');
   await clearCheckins();
+});
+
+test('the route uses the server clock, not the checkInTime of the request (#65)', async () => {
+  await clearCheckins();
+  const now = new Date();
+  // Today, in the time zone of the app, has one slot that starts in two hours: the server
+  // clock is outside it, and a checkInTime inside it must not open the check-in.
+  // `inSlot` is hh:10 two hours from now; Mahajanga is UTC+3, so the minutes are the same.
+  const inSlot = new Date(now.getTime() + 2 * 3600_000);
+  inSlot.setUTCMinutes(10, 0, 0);
+  const hour = (inSlot.getUTCHours() + 3) % 24;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const day = now
+    .toLocaleDateString('en-GB', { weekday: 'long', timeZone: DEFAULT_TIMEZONE })
+    .toLowerCase() as keyof CheckinSchedule;
+  const later = copy();
+  later[day] = { open: true, slots: [{ start: `${pad(hour)}:00`, end: `${pad(hour)}:30` }] };
+  await saveCheckinSchedule(later, admin.actor);
+  try {
+    await withServer(async (api) => {
+      const response = await call(`${api}/checkins`, admin.token, 'POST', {
+        registrationNumber: member.registrationNumber,
+        signature: signQRCode(member.registrationNumber).signature,
+        activityId: activity.id,
+        checkInTime: inSlot.toISOString(),
+      });
+      assert.equal(response.status, 400);
+      assert.match(response.body.message, /is allowed|is closed/);
+    });
+    const rows = await testDb
+      .select()
+      .from(checkins)
+      .where(eq(checkins.registrationNumber, member.registrationNumber));
+    assert.deepEqual(rows, []);
+  } finally {
+    await resetSchedule();
+    await clearCheckins();
+  }
+});
+
+test('a check-out time before the server clock is refused', async () => {
+  await clearCheckins();
+  await assert.rejects(
+    createCheckin(
+      {
+        registrationNumber: member.registrationNumber,
+        signature: signQRCode(member.registrationNumber).signature,
+        activityId: activity.id,
+        checkOutTime: '2026-11-09T05:00:00.000Z',
+      },
+      new Date('2026-11-09T06:00:00.000Z') // Monday 09:00 in Mahajanga
+    ),
+    { message: 'Check-out time must be after check-in time' }
+  );
 });
 
 test('earlier scans get their slot from the current schedule', async () => {
