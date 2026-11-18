@@ -23,3 +23,67 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+      - name: Check out develop
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base
+      - uses: pnpm/action-setup@v4
+        with: { package_json_file: pr/package.json }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pr/pnpm-lock.yaml
+            base/pnpm-lock.yaml
+
+      - name: Measure coverage of develop
+        working-directory: base
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          mkdir -p coverage
+          node --import tsx --test --experimental-test-coverage \
+            --test-coverage-exclude='tests/**' \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=coverage/lcov.info \
+            tests/*.test.ts
+
+      - name: Measure coverage of the PR
+        working-directory: pr
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          mkdir -p coverage
+          node --import tsx --test --experimental-test-coverage \
+            --test-coverage-exclude='tests/**' \
+            --test-reporter=spec --test-reporter-destination=stdout \
+            --test-reporter=lcov --test-reporter-destination=coverage/lcov.info \
+            tests/*.test.ts
+
+      - name: Compare line coverage
+        run: |
+          # Line % = sum(LH) / sum(LF) * 100, rounded to 2 decimals.
+          pct() { awk -F: '/^LF:/{f+=$2} /^LH:/{h+=$2} END{printf "%.2f", (f ? h/f*100 : 0)}' "$1"; }
+          DEVELOP=$(pct base/coverage/lcov.info)
+          PR=$(pct pr/coverage/lcov.info)
+          echo "Line coverage of develop: ${DEVELOP} %"
+          echo "Line coverage of the PR:  ${PR} %"
+          # Compare in hundredths of a point to avoid float rounding.
+          DROP=$(( 10#${DEVELOP/./} - 10#${PR/./} ))
+          if [ "$DROP" -ge 100 ]; then
+            echo "::error::Line coverage drops from ${DEVELOP} % (develop) to ${PR} % (PR). A drop of 1.00 point or more is not allowed."
+            exit 1
+          fi
+          echo "OK: the drop is less than 1.00 point."

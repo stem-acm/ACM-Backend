@@ -134,7 +134,7 @@ router.get('/:id', authMiddleware, requirePermission('activities.view'), getById
  *             properties:
  *               name:
  *                 type: string
- *                 maxLength: 255
+ *                 maxLength: 40
  *                 example: Workshop
  *               description:
  *                 type: string
@@ -198,7 +198,7 @@ router.post(
  *             properties:
  *               name:
  *                 type: string
- *                 maxLength: 255
+ *                 maxLength: 40
  *               description:
  *                 type: string
  *               image:

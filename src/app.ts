@@ -16,10 +16,10 @@ import healthRoutes from '@/routes/healthRoutes';
 import memberRoutes from '@/routes/memberRoutes';
 import settingsRoutes from '@/routes/settingsRoutes';
 import sseRoutes from '@/routes/sseRoutes';
+import uploadRoutes from '@/routes/uploadRoutes';
 import volunteerRoutes from '@/routes/volunteerRoutes';
 import swaggerOptionsConfig from '@/swagger/options';
 import logger from '@/utils/logger';
-import { uploadsRoot } from '@/utils/memberPhoto';
 
 const app: Express = express();
 
@@ -59,13 +59,8 @@ app.use((req, _, next) => {
 // Rate limiting
 // app.use(generalRateLimiter);
 
-// Static file serving
-app.use(
-  '/uploads',
-  express.static(uploadsRoot, {
-    setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
-  })
-);
+// Uploaded files (member photos need a valid token)
+app.use('/uploads', uploadRoutes);
 
 // Health check
 app.use('/health', healthRoutes);
