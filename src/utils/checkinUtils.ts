@@ -1,91 +1,79 @@
+import { type CheckinSchedule, DAYS, type Day } from '@/schemas/checkinScheduleSchema';
+
+/** The time zone of the check-in schedule. */
+export const CHECKIN_TIME_ZONE = 'Africa/Nairobi';
+
+/** Offset of Africa/Nairobi (EAT) from UTC. EAT has no daylight saving time. */
+const EAT_OFFSET_MS = 3 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A slot of one day of the schedule: the day and the start time, for example `tuesday-08:00`. */
+export type CheckinSlot = string;
+
 export interface CheckinValidationResult {
   allowed: boolean;
   reason?: string;
   slot?: CheckinSlot;
 }
 
-export type CheckinSlot =
-  | 'TUE_AM'
-  | 'TUE_PM'
-  | 'WED_AM'
-  | 'WED_PM'
-  | 'THU_AM'
-  | 'THU_PM'
-  | 'FRI_AM'
-  | 'FRI_PM'
-  | 'SAT';
+const eatFormat = new Intl.DateTimeFormat('en-GB', {
+  timeZone: CHECKIN_TIME_ZONE,
+  weekday: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
 
-export function getCheckinSlot(date: Date): CheckinSlot | null {
-  // Convert to EAT (UTC+3) for validation, assuming server might be in UTC
-  // We create a new date shifted by 3 hours to simulate local time
-  // valid only if the input 'date' is effectively UTC when getHours() is called (which is true for Date objects in Node if system is UTC)
-  // A more robust way is to use toLocaleString with timeZone option
-  const eatDateString = date.toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
-  const eatDate = new Date(eatDateString);
-
-  const day = eatDate.getDay(); // 0 is Sunday
-  const hours = eatDate.getHours();
-
-  // Monday (1) and Sunday (0) are not allowed
-  if (day === 0 || day === 1) {
-    return null;
+/** The day of the week and the `HH:mm` time of an instant in Africa/Nairobi. */
+export function getEatDayAndTime(date: Date): { day: Day; time: string } {
+  const parts = eatFormat.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  const day = part('weekday').toLowerCase() as Day;
+  if (!DAYS.includes(day)) {
+    throw new Error(`Unknown day: ${part('weekday')}`);
   }
-
-  // Saturday (6)
-  if (day === 6) {
-    if (hours >= 9 && hours < 16) {
-      return 'SAT';
-    }
-    return null;
-  }
-
-  // Tuesday (2) to Friday (5)
-  if (day >= 2 && day <= 5) {
-    // 8:00 to 12:00
-    if (hours >= 8 && hours < 12) {
-      const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-      return `${days[day]}_AM` as CheckinSlot;
-    }
-    // 15:00 to 18:00
-    if (hours >= 15 && hours < 18) {
-      const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-      return `${days[day]}_PM` as CheckinSlot;
-    }
-  }
-
-  return null;
+  return { day, time: `${part('hour')}:${part('minute')}` };
 }
 
-export function validateCheckinTime(date: Date): CheckinValidationResult {
-  // Also convert here to get the correct day for the error message/logic
-  const eatDateString = date.toLocaleString('en-US', { timeZone: 'Africa/Nairobi' });
-  const eatDate = new Date(eatDateString);
-  const day = eatDate.getDay();
+/** The first and the last millisecond of the Africa/Nairobi day of an instant. */
+export function getEatDayBounds(date: Date): { start: Date; end: Date } {
+  const eat = new Date(date.getTime() + EAT_OFFSET_MS);
+  const start = Date.UTC(eat.getUTCFullYear(), eat.getUTCMonth(), eat.getUTCDate()) - EAT_OFFSET_MS;
+  return { start: new Date(start), end: new Date(start + DAY_MS - 1) };
+}
 
-  if (day === 0 || day === 1) {
-    return {
-      allowed: false,
-      reason: 'Check-ins are not allowed on Mondays and Sundays.',
-    };
+function capitalize(day: Day): string {
+  return day.charAt(0).toUpperCase() + day.slice(1);
+}
+
+/** The slot of the schedule that contains the instant, or `null` outside all slots. */
+export function getCheckinSlot(date: Date, schedule: CheckinSchedule): CheckinSlot | null {
+  const { day, time } = getEatDayAndTime(date);
+  const today = schedule[day];
+  if (!today?.open) return null;
+  // A slot includes its start and excludes its end. `HH:mm` texts compare as times.
+  const slot = today.slots.find((item) => item.start <= time && time < item.end);
+  return slot ? `${day}-${slot.start}` : null;
+}
+
+/** Whether the schedule allows a check-in at this instant, with the reason when it does not. */
+export function validateCheckinTime(
+  date: Date,
+  schedule: CheckinSchedule
+): CheckinValidationResult {
+  const { day } = getEatDayAndTime(date);
+  const today = schedule[day];
+  if (!today?.open || today.slots.length === 0) {
+    return { allowed: false, reason: `Check-in is closed on ${capitalize(day)}.` };
   }
-
-  const slot = getCheckinSlot(date);
-
+  const slot = getCheckinSlot(date, schedule);
   if (!slot) {
-    if (day === 6) {
-      return {
-        allowed: false,
-        reason: 'On Saturdays, check-in is only allowed between 09:00 and 16:00.',
-      };
-    }
+    const hours = today.slots.map((item) => `${item.start}–${item.end}`).join(', ');
     return {
       allowed: false,
-      reason: 'Check-in is only allowed between 08:00-12:00 and 15:00-18:00 on weekdays.',
+      reason: `Check-in on ${capitalize(day)} is allowed ${hours}.`,
     };
   }
-
-  return {
-    allowed: true,
-    slot,
-  };
+  return { allowed: true, slot };
 }

@@ -50,6 +50,13 @@
       "when": 1794581112722,
       "tag": "0006_pretty_whizzer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795009768213,
+      "tag": "0007_app_settings",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import { type AuthRequest, authMiddleware } from '@/middlewares/authMiddleware';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { auditLogQuerySchema } from '@/schemas/auditSchema';
+import { checkinScheduleSchema } from '@/schemas/checkinScheduleSchema';
 import {
   FEATURES,
   getAllRolePolicies,
@@ -12,6 +13,7 @@ import {
   saveRolePolicy,
 } from '@/services/accessService';
 import { getLogs } from '@/services/auditService';
+import { getCheckinSchedule, saveCheckinSchedule } from '@/services/checkinScheduleService';
 import { updateUserAccess } from '@/services/userService';
 
 const router: ExpressRouter = Router();
@@ -117,6 +119,93 @@ router.put('/users/:id', async (req: AuthRequest, res, next) => {
 
 /**
  * @swagger
+ * /api/settings/checkin-schedule:
+ *   get:
+ *     summary: Get the check-in schedule
+ *     description: >
+ *       The open days and the check-in slots of each day. Times are in Africa/Nairobi.
+ *       Requires the settings.manage permission (admin role only).
+ *     tags: [Settings]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Check-in schedule
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Check-in schedule }
+ *                 data: { $ref: '#/components/schemas/CheckinSchedule' }
+ *       401: { description: Authentication required }
+ *       403: { description: Access denied }
+ *   put:
+ *     summary: Update the check-in schedule
+ *     description: >
+ *       Replaces the whole schedule (the 7 days). Times are HH:mm in Africa/Nairobi, a slot
+ *       ends after it starts, the slots of a day do not overlap, and an open day has at least
+ *       one slot. A closed day is stored without slots. A change writes one
+ *       checkin_schedule.updated audit log. Requires the settings.manage permission (admin role only).
+ *     tags: [Settings]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/CheckinSchedule' }
+ *     responses:
+ *       200:
+ *         description: Check-in schedule updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Check-in schedule updated }
+ *                 data: { $ref: '#/components/schemas/CheckinSchedule' }
+ *       401: { description: Authentication required }
+ *       403: { description: Access denied }
+ *       422: { description: Invalid schedule, with one error for each wrong field }
+ */
+router.get('/checkin-schedule', async (_req, res, next) => {
+  try {
+    res.json({ success: true, message: 'Check-in schedule', data: await getCheckinSchedule() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/checkin-schedule', async (req: AuthRequest, res, next) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required', data: null });
+      return;
+    }
+    const input = checkinScheduleSchema.safeParse(req.body);
+    if (!input.success) {
+      res.status(422).json({
+        success: false,
+        message: input.error.issues.map((issue) => issue.message).join(','),
+        data: {
+          errors: input.error.issues.map((issue) => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          })),
+        },
+      });
+      return;
+    }
+    const saved = await saveCheckinSchedule(input.data, req.user);
+    res.json({ success: true, message: 'Check-in schedule updated', data: saved });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
  * /api/settings/logs:
  *   get:
  *     summary: List audit logs
@@ -129,7 +218,7 @@ router.put('/users/:id', async (req: AuthRequest, res, next) => {
  *       - { in: query, name: offset, schema: { type: integer, default: 0 } }
  *       - { in: query, name: limit, schema: { type: integer, default: 25, maximum: 100 } }
  *       - { in: query, name: type, schema: { type: string, example: member.updated }, description: One log type }
- *       - { in: query, name: entity, schema: { type: string, enum: [users, role_policies, members, activities, checkins, volunteers, book_loans] } }
+ *       - { in: query, name: entity, schema: { type: string, enum: [users, role_policies, members, activities, checkins, volunteers, book_loans, app_settings] } }
  *       - { in: query, name: actorId, schema: { type: integer }, description: Id of the user that made the change }
  *       - { in: query, name: from, schema: { type: string, example: '2026-11-01' }, description: 'Start of the period: a day (YYYY-MM-DD) or an ISO 8601 date-time' }
  *       - { in: query, name: to, schema: { type: string, example: '2026-11-13' }, description: 'End of the period, included: a day (YYYY-MM-DD) or an ISO 8601 date-time' }

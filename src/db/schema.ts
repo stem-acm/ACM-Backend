@@ -57,6 +57,13 @@ export const rolePolicies = pgTable('role_policies', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Application settings: one row per setting, its value as JSON (for example the check-in schedule).
+export const appSettings = pgTable('app_settings', {
+  key: varchar('key', { length: 64 }).primaryKey(),
+  value: jsonb('value').$type<unknown>().notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // Members table
 export const members = pgTable('members', {
   registrationNumber: serial('registration_number').primaryKey(),
@@ -183,6 +190,8 @@ export type NewVolunteer = typeof volunteers.$inferInsert;
 
 export type BookLoan = typeof bookLoans.$inferSelect;
 export type NewBookLoan = typeof bookLoans.$inferInsert;
+
+export type AppSetting = typeof appSettings.$inferSelect;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

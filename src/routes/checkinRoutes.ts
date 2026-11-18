@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { create, getAll, getByRegistrationNumber, remove } from '@/controllers/checkinController';
+import {
+  create,
+  getAll,
+  getByRegistrationNumber,
+  getSchedule,
+  remove,
+} from '@/controllers/checkinController';
 import { authMiddleware } from '@/middlewares/authMiddleware';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { validateRequest } from '@/middlewares/validateRequest';
@@ -59,7 +65,7 @@ const router: Router = Router();
  *                 data:
  *                   $ref: '#/components/schemas/Checkin'
  *       400:
- *         description: Invalid input
+ *         description: Invalid input, check-in outside the schedule, or already scanned for this slot
  *       404:
  *         description: Member or activity not found
  */
@@ -154,6 +160,41 @@ router.post(
  *         description: Invalid query parameters
  */
 router.get('/', authMiddleware, requirePermission('checkins.view'), getAll);
+
+/**
+ * @swagger
+ * /api/checkins/schedule:
+ *   get:
+ *     summary: Get the check-in schedule
+ *     description: >
+ *       The open days and hours the kiosk shows. Requires the checkins.create permission.
+ *       Times are in Africa/Nairobi.
+ *     tags: [Check-ins]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Check-in schedule
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Check-in schedule
+ *                 data:
+ *                   $ref: '#/components/schemas/CheckinSchedule'
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Access denied
+ */
+// Registered before `/:registrationNumber`, which would otherwise match `schedule`.
+router.get('/schedule', authMiddleware, requirePermission('checkins.create'), getSchedule);
 
 /**
  * @swagger
