@@ -7,19 +7,21 @@ import {
   DAYS,
   DEFAULT_CHECKIN_SCHEDULE,
 } from '@/schemas/checkinScheduleSchema';
+import { DEFAULT_TIMEZONE } from '@/schemas/timezoneSchema';
+import { APP_SETTINGS_ID } from '@/services/appSettingsService';
 import { type Actor, type FieldChange, writeLog } from '@/services/auditService';
 import logger from '@/utils/logger';
 
-/** The key of the check-in schedule in `app_settings`. */
+/** The name of the check-in schedule setting in the audit logs. */
 export const CHECKIN_SCHEDULE_KEY = 'checkin_schedule';
 
 /**
- * The schedule of a stored value. A missing row or an invalid value gives the default
+ * The schedule of the stored row. A missing row or an invalid value gives the default
  * schedule: a database made with `drizzle-kit push` has no seeded row.
  */
-function resolveSchedule(stored: { value: unknown } | undefined): CheckinSchedule {
+function resolveSchedule(stored: { checkinSchedule: unknown } | undefined): CheckinSchedule {
   if (!stored) return DEFAULT_CHECKIN_SCHEDULE;
-  const parsed = checkinScheduleSchema.safeParse(stored.value);
+  const parsed = checkinScheduleSchema.safeParse(stored.checkinSchedule);
   if (!parsed.success) {
     logger.warn('Invalid stored check-in schedule, the default schedule is used', {
       issues: parsed.error.issues,
@@ -32,9 +34,9 @@ function resolveSchedule(stored: { value: unknown } | undefined): CheckinSchedul
 /** The current check-in schedule. */
 export async function getCheckinSchedule(): Promise<CheckinSchedule> {
   const [stored] = await db
-    .select()
+    .select({ checkinSchedule: appSettings.checkinSchedule })
     .from(appSettings)
-    .where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY))
+    .where(eq(appSettings.id, APP_SETTINGS_ID))
     .limit(1);
   return resolveSchedule(stored);
 }
@@ -50,9 +52,9 @@ export async function saveCheckinSchedule(
 ): Promise<CheckinSchedule> {
   await db.transaction(async (tx) => {
     const [stored] = await tx
-      .select()
+      .select({ checkinSchedule: appSettings.checkinSchedule })
       .from(appSettings)
-      .where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY))
+      .where(eq(appSettings.id, APP_SETTINGS_ID))
       .limit(1);
     const before = resolveSchedule(stored);
 
@@ -67,10 +69,10 @@ export async function saveCheckinSchedule(
 
     await tx
       .insert(appSettings)
-      .values({ key: CHECKIN_SCHEDULE_KEY, value: schedule })
+      .values({ id: APP_SETTINGS_ID, timezone: DEFAULT_TIMEZONE, checkinSchedule: schedule })
       .onConflictDoUpdate({
-        target: appSettings.key,
-        set: { value: schedule, updatedAt: new Date() },
+        target: appSettings.id,
+        set: { checkinSchedule: schedule, updatedAt: new Date() },
       });
     if (changed) {
       await writeLog(tx, actor, {

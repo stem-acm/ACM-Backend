@@ -21,6 +21,8 @@ delete process.env.MAX_REQUEST_LIMIT;
 const { db } = await import('../src/db/drizzle');
 const schema = await import('../src/db/schema');
 const { DEFAULT_CHECKIN_SCHEDULE } = await import('../src/schemas/checkinScheduleSchema');
+const { DEFAULT_TIMEZONE } = await import('../src/schemas/timezoneSchema');
+const { APP_SETTINGS_ID } = await import('../src/services/appSettingsService');
 const { CHECKIN_SCHEDULE_KEY, getCheckinSchedule, saveCheckinSchedule } = await import(
   '../src/services/checkinScheduleService'
 );
@@ -60,19 +62,20 @@ function copy(): CheckinSchedule {
   return structuredClone(DEFAULT_CHECKIN_SCHEDULE);
 }
 
+async function storedRow() {
+  const [row] = await testDb.select().from(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
+  return row;
+}
+
 async function storedValue(): Promise<unknown> {
-  const [row] = await testDb
-    .select()
-    .from(appSettings)
-    .where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY));
-  return row?.value;
+  return (await storedRow())?.checkinSchedule;
 }
 
 async function resetSchedule() {
   await testDb
     .update(appSettings)
-    .set({ value: DEFAULT_CHECKIN_SCHEDULE })
-    .where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY));
+    .set({ checkinSchedule: DEFAULT_CHECKIN_SCHEDULE })
+    .where(eq(appSettings.id, APP_SETTINGS_ID));
 }
 
 async function scheduleLogs(fromId: number) {
@@ -124,21 +127,43 @@ test('the migration stores the default schedule', async () => {
 });
 
 test('without a row or with an invalid value, the default schedule is used', async () => {
-  await testDb.delete(appSettings).where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY));
+  await testDb.delete(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
   assert.deepEqual(await getCheckinSchedule(), DEFAULT_CHECKIN_SCHEDULE);
 
-  await testDb.insert(appSettings).values({ key: CHECKIN_SCHEDULE_KEY, value: { monday: 1 } });
+  await testDb.insert(appSettings).values({ id: APP_SETTINGS_ID, checkinSchedule: { monday: 1 } });
   assert.deepEqual(await getCheckinSchedule(), DEFAULT_CHECKIN_SCHEDULE);
   await resetSchedule();
 });
 
 test('the first save without a row stores the schedule even when nothing changed', async () => {
-  await testDb.delete(appSettings).where(eq(appSettings.key, CHECKIN_SCHEDULE_KEY));
+  await testDb.delete(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
   const from = await lastLogId();
   const saved = await saveCheckinSchedule(copy(), admin.actor);
   assert.deepEqual(saved, DEFAULT_CHECKIN_SCHEDULE);
-  assert.deepEqual(await storedValue(), DEFAULT_CHECKIN_SCHEDULE);
+  const row = await storedRow();
+  assert.deepEqual(row?.checkinSchedule, DEFAULT_CHECKIN_SCHEDULE);
+  assert.equal(row?.timezone, DEFAULT_TIMEZONE);
   assert.deepEqual(await scheduleLogs(from), []);
+});
+
+test('saving the schedule leaves the time zone unchanged', async () => {
+  await testDb
+    .update(appSettings)
+    .set({ timezone: 'Europe/Paris' })
+    .where(eq(appSettings.id, APP_SETTINGS_ID));
+  try {
+    const changed = copy();
+    changed.saturday = { open: false, slots: [] };
+    await saveCheckinSchedule(changed, admin.actor);
+    const row = await storedRow();
+    assert.deepEqual(row?.checkinSchedule, changed);
+    assert.equal(row?.timezone, 'Europe/Paris');
+  } finally {
+    await testDb
+      .update(appSettings)
+      .set({ timezone: DEFAULT_TIMEZONE, checkinSchedule: DEFAULT_CHECKIN_SCHEDULE })
+      .where(eq(appSettings.id, APP_SETTINGS_ID));
+  }
 });
 
 // --- Settings API -------------------------------------------------------------------------

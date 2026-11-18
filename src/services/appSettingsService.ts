@@ -1,23 +1,27 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { appSettings } from '@/db/schema';
+import { DEFAULT_CHECKIN_SCHEDULE } from '@/schemas/checkinScheduleSchema';
 import { DEFAULT_TIMEZONE, timezoneSchema } from '@/schemas/timezoneSchema';
 import { type Actor, writeLog } from '@/services/auditService';
 import logger from '@/utils/logger';
 
-/** The key of the time zone of the app in `app_settings`. */
+/** The id of the single row of `app_settings`. */
+export const APP_SETTINGS_ID = 1;
+
+/** The name of the time zone setting in the audit logs. */
 export const TIMEZONE_KEY = 'timezone';
 
 /**
- * The time zone of a stored value. A missing row or an invalid value gives the default
+ * The time zone of the stored row. A missing row or an unknown zone gives the default
  * time zone: a database made with `drizzle-kit push` has no seeded row.
  */
-function resolveTimezone(stored: { value: unknown } | undefined): string {
+function resolveTimezone(stored: { timezone: string } | undefined): string {
   if (!stored) return DEFAULT_TIMEZONE;
-  const parsed = timezoneSchema.safeParse(stored.value);
+  const parsed = timezoneSchema.safeParse(stored.timezone);
   if (!parsed.success) {
     logger.warn('Invalid stored time zone, the default time zone is used', {
-      value: stored.value,
+      value: stored.timezone,
     });
     return DEFAULT_TIMEZONE;
   }
@@ -29,9 +33,9 @@ function resolveTimezone(stored: { value: unknown } | undefined): string {
  */
 export async function getTimezone(): Promise<string> {
   const [stored] = await db
-    .select()
+    .select({ timezone: appSettings.timezone })
     .from(appSettings)
-    .where(eq(appSettings.key, TIMEZONE_KEY))
+    .where(eq(appSettings.id, APP_SETTINGS_ID))
     .limit(1);
   return resolveTimezone(stored);
 }
@@ -43,9 +47,9 @@ export async function getTimezone(): Promise<string> {
 export async function saveTimezone(timezone: string, actor: Actor): Promise<string> {
   await db.transaction(async (tx) => {
     const [stored] = await tx
-      .select()
+      .select({ timezone: appSettings.timezone })
       .from(appSettings)
-      .where(eq(appSettings.key, TIMEZONE_KEY))
+      .where(eq(appSettings.id, APP_SETTINGS_ID))
       .limit(1);
     const before = resolveTimezone(stored);
     const changed = before !== timezone;
@@ -53,10 +57,10 @@ export async function saveTimezone(timezone: string, actor: Actor): Promise<stri
 
     await tx
       .insert(appSettings)
-      .values({ key: TIMEZONE_KEY, value: timezone })
+      .values({ id: APP_SETTINGS_ID, timezone, checkinSchedule: DEFAULT_CHECKIN_SCHEDULE })
       .onConflictDoUpdate({
-        target: appSettings.key,
-        set: { value: timezone, updatedAt: new Date() },
+        target: appSettings.id,
+        set: { timezone, updatedAt: new Date() },
       });
     if (changed) {
       await writeLog(tx, actor, {

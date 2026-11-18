@@ -1,5 +1,5 @@
 {
-  "id": "1062a41c-7db6-4e08-9f82-f30b5fe71037",
+  "id": "ba62bd88-5e6c-4cba-af15-929756ba8ea6",
   "prevId": "a70bd981-9690-4c7a-99df-a8266d43fad7",
   "version": "7",
   "dialect": "postgresql",
@@ -119,14 +119,22 @@
       "name": "app_settings",
       "schema": "",
       "columns": {
-        "key": {
-          "name": "key",
-          "type": "varchar(64)",
+        "id": {
+          "name": "id",
+          "type": "smallint",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": 1
         },
-        "value": {
-          "name": "value",
+        "timezone": {
+          "name": "timezone",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Indian/Antananarivo'"
+        },
+        "checkin_schedule": {
+          "name": "checkin_schedule",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
@@ -144,7 +152,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "app_settings_single_row": {
+          "name": "app_settings_single_row",
+          "value": "\"app_settings\".\"id\" = 1"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.audit_logs": {

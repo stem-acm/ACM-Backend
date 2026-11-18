@@ -21,7 +21,8 @@ delete process.env.MAX_REQUEST_LIMIT;
 const { db } = await import('../src/db/drizzle');
 const schema = await import('../src/db/schema');
 const { DEFAULT_TIMEZONE, isValidTimeZone } = await import('../src/schemas/timezoneSchema');
-const { TIMEZONE_KEY, getTimezone, saveTimezone } = await import(
+const { DEFAULT_CHECKIN_SCHEDULE } = await import('../src/schemas/checkinScheduleSchema');
+const { APP_SETTINGS_ID, TIMEZONE_KEY, getTimezone, saveTimezone } = await import(
   '../src/services/appSettingsService'
 );
 const { createCheckin } = await import('../src/services/checkinService');
@@ -55,16 +56,20 @@ const admin = await newUser('boss', 'admin');
 const intern = await newUser('fanja', 'intern');
 const volunteer = await newUser('soa', 'volunteer');
 
-async function storedValue(): Promise<unknown> {
-  const [row] = await testDb.select().from(appSettings).where(eq(appSettings.key, TIMEZONE_KEY));
-  return row?.value;
+async function storedRow() {
+  const [row] = await testDb.select().from(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
+  return row;
+}
+
+async function storedValue(): Promise<string | undefined> {
+  return (await storedRow())?.timezone;
 }
 
 async function resetTimezone() {
   await testDb
     .update(appSettings)
-    .set({ value: DEFAULT_TIMEZONE })
-    .where(eq(appSettings.key, TIMEZONE_KEY));
+    .set({ timezone: DEFAULT_TIMEZONE })
+    .where(eq(appSettings.id, APP_SETTINGS_ID));
 }
 
 async function timezoneLogs(fromId: number) {
@@ -121,29 +126,74 @@ test('a time zone is an IANA name that Intl knows', () => {
 
 // --- Storage ----------------------------------------------------------------------------
 
-test('the migration stores the default time zone', async () => {
+test('the migration stores one settings row with the default time zone', async () => {
   assert.equal(DEFAULT_TIMEZONE, 'Indian/Antananarivo');
-  assert.equal(await storedValue(), DEFAULT_TIMEZONE);
+  const rows = await testDb.select().from(appSettings);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].id, APP_SETTINGS_ID);
+  assert.equal(rows[0].timezone, DEFAULT_TIMEZONE);
+  assert.deepEqual(rows[0].checkinSchedule, DEFAULT_CHECKIN_SCHEDULE);
   assert.equal(await getTimezone(), DEFAULT_TIMEZONE);
 });
 
-test('without a row or with an invalid value, the default time zone is used', async () => {
-  await testDb.delete(appSettings).where(eq(appSettings.key, TIMEZONE_KEY));
+test('the timezone column defaults to Indian/Antananarivo and the id to 1', async () => {
+  await testDb.delete(appSettings);
+  await testDb.insert(appSettings).values({ checkinSchedule: DEFAULT_CHECKIN_SCHEDULE });
+  const row = await storedRow();
+  assert.equal(row?.id, 1);
+  assert.equal(row?.timezone, 'Indian/Antananarivo');
+});
+
+test('the settings table accepts no row other than id 1', async () => {
+  await assert.rejects(
+    testDb.insert(appSettings).values({ id: 2, checkinSchedule: DEFAULT_CHECKIN_SCHEDULE }),
+    (error: Error & { cause?: { message?: string } }) =>
+      `${error.message} ${error.cause?.message ?? ''}`.includes('app_settings_single_row')
+  );
+  assert.equal((await testDb.select().from(appSettings)).length, 1);
+});
+
+test('without a row or with an unknown zone, the default time zone is used', async () => {
+  await testDb.delete(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
   assert.equal(await getTimezone(), DEFAULT_TIMEZONE);
 
-  await testDb.insert(appSettings).values({ key: TIMEZONE_KEY, value: 'Mars/Olympus_Mons' });
-  assert.equal(await getTimezone(), DEFAULT_TIMEZONE);
-  await testDb.update(appSettings).set({ value: 42 }).where(eq(appSettings.key, TIMEZONE_KEY));
+  await testDb.insert(appSettings).values({
+    id: APP_SETTINGS_ID,
+    timezone: 'Mars/Olympus_Mons',
+    checkinSchedule: DEFAULT_CHECKIN_SCHEDULE,
+  });
   assert.equal(await getTimezone(), DEFAULT_TIMEZONE);
   await resetTimezone();
 });
 
 test('the first save without a row stores the time zone even when nothing changed', async () => {
-  await testDb.delete(appSettings).where(eq(appSettings.key, TIMEZONE_KEY));
+  await testDb.delete(appSettings).where(eq(appSettings.id, APP_SETTINGS_ID));
   const from = await lastLogId();
   assert.equal(await saveTimezone(DEFAULT_TIMEZONE, admin.actor), DEFAULT_TIMEZONE);
-  assert.equal(await storedValue(), DEFAULT_TIMEZONE);
+  const row = await storedRow();
+  assert.equal(row?.timezone, DEFAULT_TIMEZONE);
+  assert.deepEqual(row?.checkinSchedule, DEFAULT_CHECKIN_SCHEDULE);
   assert.deepEqual(await timezoneLogs(from), []);
+});
+
+test('saving the time zone leaves the check-in schedule unchanged', async () => {
+  const schedule = structuredClone(DEFAULT_CHECKIN_SCHEDULE);
+  schedule.sunday = { open: false, slots: [] };
+  await testDb
+    .update(appSettings)
+    .set({ checkinSchedule: schedule })
+    .where(eq(appSettings.id, APP_SETTINGS_ID));
+  try {
+    await saveTimezone('Africa/Nairobi', admin.actor);
+    const row = await storedRow();
+    assert.equal(row?.timezone, 'Africa/Nairobi');
+    assert.deepEqual(row?.checkinSchedule, schedule);
+  } finally {
+    await testDb
+      .update(appSettings)
+      .set({ timezone: DEFAULT_TIMEZONE, checkinSchedule: DEFAULT_CHECKIN_SCHEDULE })
+      .where(eq(appSettings.id, APP_SETTINGS_ID));
+  }
 });
 
 test('when writeLog fails, the time zone is not changed', async () => {
