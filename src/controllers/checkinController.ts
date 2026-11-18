@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '@/middlewares/authMiddleware';
 import { checkinQuerySchema } from '@/schemas/checkinSchema';
+import { getTimezone } from '@/services/appSettingsService';
+import { getCheckinSchedule } from '@/services/checkinScheduleService';
 import {
   createCheckin,
   deleteCheckin,
@@ -95,6 +97,21 @@ export async function remove(req: AuthRequest, res: Response): Promise<void> {
     res.status(statusCode).json({
       success: false,
       message,
+      data: null,
+    });
+  }
+}
+
+export async function getSchedule(_req: Request, res: Response): Promise<void> {
+  try {
+    const [timezone, schedule] = await Promise.all([getTimezone(), getCheckinSchedule()]);
+    res
+      .status(200)
+      .json({ success: true, message: 'Check-in schedule', data: { timezone, schedule } });
+  } catch {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve the check-in schedule',
       data: null,
     });
   }

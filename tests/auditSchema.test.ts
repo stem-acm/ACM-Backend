@@ -11,6 +11,8 @@ const TYPE_ENTITY: Record<string, string> = {
   checkin: 'checkins',
   volunteer: 'volunteers',
   book_loan: 'book_loans',
+  checkin_schedule: 'app_settings',
+  timezone: 'app_settings',
 };
 
 function fields(query: Record<string, unknown>): string[] {
@@ -19,13 +21,13 @@ function fields(query: Record<string, unknown>): string[] {
   return parsed.error.issues.map((issue) => issue.path.join('.'));
 }
 
-test('there are 23 log types, each one written once', () => {
-  assert.equal(LOG_TYPES.length, 23);
-  assert.equal(new Set(LOG_TYPES).size, 23);
+test('there are 25 log types, each one written once', () => {
+  assert.equal(LOG_TYPES.length, 25);
+  assert.equal(new Set(LOG_TYPES).size, 25);
 });
 
-test('each log type belongs to one of the 7 entities, and each entity has a log type', () => {
-  assert.equal(LOG_ENTITIES.length, 7);
+test('each log type belongs to one of the 8 entities, and each entity has a log type', () => {
+  assert.equal(LOG_ENTITIES.length, 8);
   const used = new Set<string>();
   for (const type of LOG_TYPES) {
     const entity = TYPE_ENTITY[type.split('.')[0]];

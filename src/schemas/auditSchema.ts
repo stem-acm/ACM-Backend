@@ -24,6 +24,8 @@ export const LOG_TYPES = [
   'book_loan.created',
   'book_loan.updated',
   'book_loan.returned',
+  'checkin_schedule.updated',
+  'timezone.updated',
 ] as const;
 export type LogType = (typeof LOG_TYPES)[number];
 
@@ -35,6 +37,7 @@ export const LOG_ENTITIES = [
   'checkins',
   'volunteers',
   'book_loans',
+  'app_settings',
 ] as const;
 export type LogEntity = (typeof LOG_ENTITIES)[number];
 
