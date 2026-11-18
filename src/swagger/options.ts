@@ -250,7 +250,8 @@ const swaggerOptions: Options = {
         },
         CheckinSchedule: {
           type: 'object',
-          description: 'The check-in schedule of each day. Times are HH:mm in Africa/Nairobi.',
+          description:
+            'The check-in schedule of each day. Times are HH:mm in the time zone of the app (GET /api/settings/timezone).',
           required: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
           additionalProperties: false,
           properties: {

@@ -6,12 +6,14 @@ import { type AuthRequest, authMiddleware } from '@/middlewares/authMiddleware';
 import { requirePermission } from '@/middlewares/permissionMiddleware';
 import { auditLogQuerySchema } from '@/schemas/auditSchema';
 import { checkinScheduleSchema } from '@/schemas/checkinScheduleSchema';
+import { timezoneInputSchema } from '@/schemas/timezoneSchema';
 import {
   FEATURES,
   getAllRolePolicies,
   getRolePolicy,
   saveRolePolicy,
 } from '@/services/accessService';
+import { getTimezone, saveTimezone } from '@/services/appSettingsService';
 import { getLogs } from '@/services/auditService';
 import { getCheckinSchedule, saveCheckinSchedule } from '@/services/checkinScheduleService';
 import { updateUserAccess } from '@/services/userService';
@@ -123,7 +125,8 @@ router.put('/users/:id', async (req: AuthRequest, res, next) => {
  *   get:
  *     summary: Get the check-in schedule
  *     description: >
- *       The open days and the check-in slots of each day. Times are in Africa/Nairobi.
+ *       The open days and the check-in slots of each day. Times are in the time zone of the
+ *       app (GET /api/settings/timezone).
  *       Requires the settings.manage permission (admin role only).
  *     tags: [Settings]
  *     security: [{ bearerAuth: [] }]
@@ -143,7 +146,7 @@ router.put('/users/:id', async (req: AuthRequest, res, next) => {
  *   put:
  *     summary: Update the check-in schedule
  *     description: >
- *       Replaces the whole schedule (the 7 days). Times are HH:mm in Africa/Nairobi, a slot
+ *       Replaces the whole schedule (the 7 days). Times are HH:mm in the time zone of the app, a slot
  *       ends after it starts, the slots of a day do not overlap, and an open day has at least
  *       one slot. A closed day is stored without slots. A change writes one
  *       checkin_schedule.updated audit log. Requires the settings.manage permission (admin role only).
@@ -199,6 +202,101 @@ router.put('/checkin-schedule', async (req: AuthRequest, res, next) => {
     }
     const saved = await saveCheckinSchedule(input.data, req.user);
     res.json({ success: true, message: 'Check-in schedule updated', data: saved });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/settings/timezone:
+ *   get:
+ *     summary: Get the time zone of the app
+ *     description: >
+ *       The IANA time zone in which the check-in times and the opening hours are read.
+ *       Requires the settings.manage permission (admin role only).
+ *     tags: [Settings]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Time zone
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Time zone }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     timezone: { type: string, example: Indian/Antananarivo }
+ *       401: { description: Authentication required }
+ *       403: { description: Access denied }
+ *   put:
+ *     summary: Update the time zone of the app
+ *     description: >
+ *       Sets the IANA time zone (for example Indian/Antananarivo or UTC). A change writes one
+ *       timezone.updated audit log. Requires the settings.manage permission (admin role only).
+ *     tags: [Settings]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [timezone]
+ *             properties:
+ *               timezone: { type: string, example: Indian/Antananarivo }
+ *     responses:
+ *       200:
+ *         description: Time zone updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Time zone updated }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     timezone: { type: string, example: Indian/Antananarivo }
+ *       401: { description: Authentication required }
+ *       403: { description: Access denied }
+ *       422: { description: 'Unknown time zone, with the error on the field timezone' }
+ */
+router.get('/timezone', async (_req, res, next) => {
+  try {
+    res.json({ success: true, message: 'Time zone', data: { timezone: await getTimezone() } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/timezone', async (req: AuthRequest, res, next) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required', data: null });
+      return;
+    }
+    const input = timezoneInputSchema.safeParse(req.body);
+    if (!input.success) {
+      res.status(422).json({
+        success: false,
+        message: input.error.issues.map((issue) => issue.message).join(','),
+        data: {
+          errors: input.error.issues.map((issue) => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          })),
+        },
+      });
+      return;
+    }
+    const timezone = await saveTimezone(input.data.timezone, req.user);
+    res.json({ success: true, message: 'Time zone updated', data: { timezone } });
   } catch (error) {
     next(error);
   }

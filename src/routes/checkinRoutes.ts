@@ -167,8 +167,8 @@ router.get('/', authMiddleware, requirePermission('checkins.view'), getAll);
  *   get:
  *     summary: Get the check-in schedule
  *     description: >
- *       The open days and hours the kiosk shows. Requires the checkins.create permission.
- *       Times are in Africa/Nairobi.
+ *       The time zone of the app and the open days and hours that the kiosk shows. The times
+ *       of the schedule are in this time zone. Requires the checkins.create permission.
  *     tags: [Check-ins]
  *     security:
  *       - bearerAuth: []
@@ -187,7 +187,13 @@ router.get('/', authMiddleware, requirePermission('checkins.view'), getAll);
  *                   type: string
  *                   example: Check-in schedule
  *                 data:
- *                   $ref: '#/components/schemas/CheckinSchedule'
+ *                   type: object
+ *                   properties:
+ *                     timezone:
+ *                       type: string
+ *                       example: Indian/Antananarivo
+ *                     schedule:
+ *                       $ref: '#/components/schemas/CheckinSchedule'
  *       401:
  *         description: Authentication required
  *       403:

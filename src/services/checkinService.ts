@@ -2,9 +2,10 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins, members } from '@/db/schema';
 import type { CheckinQueryInput, CreateCheckinInput } from '@/schemas/checkinSchema';
+import { getTimezone } from '@/services/appSettingsService';
 import { type Actor, memberLabel, snapshot, writeLog } from '@/services/auditService';
 import { getCheckinSchedule } from '@/services/checkinScheduleService';
-import { getCheckinSlot, getEatDayBounds, validateCheckinTime } from '@/utils/checkinUtils';
+import { getCheckinSlot, getZoneDayBounds, validateCheckinTime } from '@/utils/checkinUtils';
 import { verifyQRCode } from '@/utils/qrUtils';
 
 export async function createCheckin(input: CreateCheckinInput) {
@@ -37,9 +38,10 @@ export async function createCheckin(input: CreateCheckinInput) {
 
   const checkInTime = input.checkInTime ? new Date(input.checkInTime) : new Date();
 
-  // Read the schedule once: the new scan and the earlier scans use the same one.
-  const schedule = await getCheckinSchedule();
-  const validation = validateCheckinTime(checkInTime, schedule);
+  // Read the schedule and the time zone once: the new scan and the earlier scans use the
+  // same ones.
+  const [schedule, timeZone] = await Promise.all([getCheckinSchedule(), getTimezone()]);
+  const validation = validateCheckinTime(checkInTime, schedule, timeZone);
   if (!validation.allowed) {
     throw new Error(validation.reason);
   }
@@ -50,7 +52,7 @@ export async function createCheckin(input: CreateCheckinInput) {
   // does not block the new scan.
   const currentSlot = validation.slot;
   if (currentSlot) {
-    const { start, end } = getEatDayBounds(checkInTime);
+    const { start, end } = getZoneDayBounds(checkInTime, timeZone);
     const todaysCheckins = await db
       .select()
       .from(checkins)
@@ -63,7 +65,7 @@ export async function createCheckin(input: CreateCheckinInput) {
       );
 
     for (const checkin of todaysCheckins) {
-      if (getCheckinSlot(checkin.checkInTime, schedule) === currentSlot) {
+      if (getCheckinSlot(checkin.checkInTime, schedule, timeZone) === currentSlot) {
         throw new Error('Already scanned for this half day');
       }
     }

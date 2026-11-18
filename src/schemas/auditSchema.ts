@@ -25,6 +25,7 @@ export const LOG_TYPES = [
   'book_loan.updated',
   'book_loan.returned',
   'checkin_schedule.updated',
+  'timezone.updated',
 ] as const;
 export type LogType = (typeof LOG_TYPES)[number];
 

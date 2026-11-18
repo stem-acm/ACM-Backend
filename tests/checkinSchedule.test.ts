@@ -247,7 +247,7 @@ test('GET /api/checkins/schedule is open to the users who can create check-ins',
       assert.deepEqual(response.body, {
         success: true,
         message: 'Check-in schedule',
-        data: DEFAULT_CHECKIN_SCHEDULE,
+        data: { timezone: 'Indian/Antananarivo', schedule: DEFAULT_CHECKIN_SCHEDULE },
       });
     }
 
@@ -257,7 +257,7 @@ test('GET /api/checkins/schedule is open to the users who can create check-ins',
       (await call(`${api}/settings/checkin-schedule`, admin.token, 'PUT', changed)).status,
       200
     );
-    assert.deepEqual((await call(url, volunteer.token)).body.data, changed);
+    assert.deepEqual((await call(url, volunteer.token)).body.data.schedule, changed);
 
     // Updating stays admin-only.
     assert.equal((await call(url, admin.token, 'PUT', changed)).status, 404);

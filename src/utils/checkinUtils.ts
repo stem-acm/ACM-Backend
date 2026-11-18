@@ -1,10 +1,5 @@
 import { type CheckinSchedule, DAYS, type Day } from '@/schemas/checkinScheduleSchema';
 
-/** The time zone of the check-in schedule. */
-export const CHECKIN_TIME_ZONE = 'Africa/Nairobi';
-
-/** Offset of Africa/Nairobi (EAT) from UTC. EAT has no daylight saving time. */
-const EAT_OFFSET_MS = 3 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** A slot of one day of the schedule: the day and the start time, for example `tuesday-08:00`. */
@@ -16,31 +11,95 @@ export interface CheckinValidationResult {
   slot?: CheckinSlot;
 }
 
-const eatFormat = new Intl.DateTimeFormat('en-GB', {
-  timeZone: CHECKIN_TIME_ZONE,
-  weekday: 'long',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
+const formats = new Map<string, Intl.DateTimeFormat>();
 
-/** The day of the week and the `HH:mm` time of an instant in Africa/Nairobi. */
-export function getEatDayAndTime(date: Date): { day: Day; time: string } {
-  const parts = eatFormat.formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((item) => item.type === type)?.value ?? '';
-  const day = part('weekday').toLowerCase() as Day;
-  if (!DAYS.includes(day)) {
-    throw new Error(`Unknown day: ${part('weekday')}`);
+/** One formatter for each time zone: creating an `Intl.DateTimeFormat` is slow. */
+function zoneFormat(timeZone: string): Intl.DateTimeFormat {
+  let format = formats.get(timeZone);
+  if (!format) {
+    format = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+    formats.set(timeZone, format);
   }
-  return { day, time: `${part('hour')}:${part('minute')}` };
+  return format;
 }
 
-/** The first and the last millisecond of the Africa/Nairobi day of an instant. */
-export function getEatDayBounds(date: Date): { start: Date; end: Date } {
-  const eat = new Date(date.getTime() + EAT_OFFSET_MS);
-  const start = Date.UTC(eat.getUTCFullYear(), eat.getUTCMonth(), eat.getUTCDate()) - EAT_OFFSET_MS;
-  return { start: new Date(start), end: new Date(start + DAY_MS - 1) };
+interface ZoneParts {
+  weekday: string;
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
+/** The wall-clock date and time of an instant in a time zone. */
+function zoneParts(date: Date, timeZone: string): ZoneParts {
+  const parts = zoneFormat(timeZone).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return {
+    weekday: part('weekday'),
+    year: Number(part('year')),
+    month: Number(part('month')),
+    day: Number(part('day')),
+    hour: Number(part('hour')),
+    minute: Number(part('minute')),
+    second: Number(part('second')),
+  };
+}
+
+/** The offset of a time zone from UTC at an instant, in milliseconds (UTC+3 gives 3 h). */
+function zoneOffset(time: number, timeZone: string): number {
+  const p = zoneParts(new Date(time), timeZone);
+  const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return wall - (time - (((time % 1000) + 1000) % 1000));
+}
+
+/** The instant of midnight at the start of a wall-clock day in a time zone. */
+function zoneMidnight(year: number, month: number, day: number, timeZone: string): number {
+  const wall = Date.UTC(year, month - 1, day);
+  // The offset can change on that day (daylight saving time): take it at the first guess.
+  const guess = wall - zoneOffset(wall, timeZone);
+  return wall - zoneOffset(guess, timeZone);
+}
+
+/** The day of the week and the `HH:mm` time of an instant in a time zone. */
+export function getZoneDayAndTime(date: Date, timeZone: string): { day: Day; time: string } {
+  const p = zoneParts(date, timeZone);
+  const day = p.weekday.toLowerCase() as Day;
+  if (!DAYS.includes(day)) {
+    throw new Error(`Unknown day: ${p.weekday}`);
+  }
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return { day, time: `${pad(p.hour)}:${pad(p.minute)}` };
+}
+
+/**
+ * The first and the last millisecond of the day of an instant in a time zone. A day with a
+ * daylight saving time change lasts 23 or 25 hours.
+ */
+export function getZoneDayBounds(date: Date, timeZone: string): { start: Date; end: Date } {
+  const p = zoneParts(date, timeZone);
+  const start = zoneMidnight(p.year, p.month, p.day, timeZone);
+  const next = new Date(Date.UTC(p.year, p.month - 1, p.day) + DAY_MS);
+  const end = zoneMidnight(
+    next.getUTCFullYear(),
+    next.getUTCMonth() + 1,
+    next.getUTCDate(),
+    timeZone
+  );
+  return { start: new Date(start), end: new Date(end - 1) };
 }
 
 function capitalize(day: Day): string {
@@ -48,8 +107,12 @@ function capitalize(day: Day): string {
 }
 
 /** The slot of the schedule that contains the instant, or `null` outside all slots. */
-export function getCheckinSlot(date: Date, schedule: CheckinSchedule): CheckinSlot | null {
-  const { day, time } = getEatDayAndTime(date);
+export function getCheckinSlot(
+  date: Date,
+  schedule: CheckinSchedule,
+  timeZone: string
+): CheckinSlot | null {
+  const { day, time } = getZoneDayAndTime(date, timeZone);
   const today = schedule[day];
   if (!today?.open) return null;
   // A slot includes its start and excludes its end. `HH:mm` texts compare as times.
@@ -60,14 +123,15 @@ export function getCheckinSlot(date: Date, schedule: CheckinSchedule): CheckinSl
 /** Whether the schedule allows a check-in at this instant, with the reason when it does not. */
 export function validateCheckinTime(
   date: Date,
-  schedule: CheckinSchedule
+  schedule: CheckinSchedule,
+  timeZone: string
 ): CheckinValidationResult {
-  const { day } = getEatDayAndTime(date);
+  const { day } = getZoneDayAndTime(date, timeZone);
   const today = schedule[day];
   if (!today?.open || today.slots.length === 0) {
     return { allowed: false, reason: `Check-in is closed on ${capitalize(day)}.` };
   }
-  const slot = getCheckinSlot(date, schedule);
+  const slot = getCheckinSlot(date, schedule, timeZone);
   if (!slot) {
     const hours = today.slots.map((item) => `${item.start}–${item.end}`).join(', ');
     return {

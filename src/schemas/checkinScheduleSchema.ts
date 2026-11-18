@@ -12,7 +12,7 @@ export const DAYS = [
 ] as const;
 export type Day = (typeof DAYS)[number];
 
-/** One check-in slot: `start` included, `end` excluded, both `HH:mm` in Africa/Nairobi. */
+/** One check-in slot: `start` included, `end` excluded, both `HH:mm` in the time zone of the app. */
 export interface ScheduleSlot {
   start: string;
   end: string;
