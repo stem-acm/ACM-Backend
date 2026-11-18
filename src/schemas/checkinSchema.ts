@@ -5,27 +5,17 @@ const isoDateTimeSchema = z
   .datetime({ message: 'Invalid ISO 8601 datetime format' })
   .optional();
 
-export const createCheckinSchema = z
-  .object({
-    registrationNumber: z.number(),
-    signature: z.string().min(1, 'QR code signature is required'),
-    activityId: z.number().int().positive('Activity ID must be a positive integer'),
-    checkInTime: isoDateTimeSchema,
-    checkOutTime: isoDateTimeSchema,
-    visitReason: z.string().max(500, 'Visit reason must be less than 500 characters').optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.checkInTime && data.checkOutTime) {
-        return new Date(data.checkOutTime) > new Date(data.checkInTime);
-      }
-      return true;
-    },
-    {
-      message: 'Check-out time must be after check-in time',
-      path: ['checkOutTime'],
-    }
-  );
+/**
+ * The body of `POST /api/checkins`. There is no `checkInTime`: the server clock is the
+ * check-in time, and an unknown field such as `checkInTime` is removed by the parse.
+ */
+export const createCheckinSchema = z.object({
+  registrationNumber: z.number(),
+  signature: z.string().min(1, 'QR code signature is required'),
+  activityId: z.number().int().positive('Activity ID must be a positive integer'),
+  checkOutTime: isoDateTimeSchema,
+  visitReason: z.string().max(500, 'Visit reason must be less than 500 characters').optional(),
+});
 
 export const checkinQuerySchema = z.object({
   offset: z

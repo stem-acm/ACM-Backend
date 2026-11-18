@@ -20,12 +20,22 @@ export function isValidTimeZone(value: string): boolean {
   }
 }
 
+/**
+ * The canonical spelling of a valid time zone, as `Intl` gives it: `europe/paris` gives
+ * `Europe/Paris` and `utc` gives `UTC`.
+ */
+export function canonicalTimeZone(value: string): string {
+  return new Intl.DateTimeFormat('en', { timeZone: value }).resolvedOptions().timeZone;
+}
+
+/** A valid IANA time zone, in its canonical spelling. */
 export const timezoneSchema = z
   .string({
     required_error: TIMEZONE_MESSAGE,
     invalid_type_error: TIMEZONE_MESSAGE,
   })
-  .refine(isValidTimeZone, TIMEZONE_MESSAGE);
+  .refine(isValidTimeZone, TIMEZONE_MESSAGE)
+  .transform(canonicalTimeZone);
 
 /** The body of `PUT /api/settings/timezone`. */
 export const timezoneInputSchema = z.object({ timezone: timezoneSchema });

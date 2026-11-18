@@ -283,6 +283,36 @@ test('a new time zone writes one log with the time zone before and after', async
   await resetTimezone();
 });
 
+test('the time zone is stored in its canonical spelling (#66)', async () => {
+  await withServer(async (api) => {
+    const url = `${api}/settings/timezone`;
+    for (const [sent, stored] of [
+      ['europe/paris', 'Europe/Paris'],
+      ['utc', 'UTC'],
+    ]) {
+      const response = await call(url, admin.token, 'PUT', { timezone: sent });
+      assert.equal(response.status, 200, sent);
+      assert.deepEqual(response.body.data, { timezone: stored });
+      assert.equal(await storedValue(), stored);
+    }
+    // Another spelling of the stored zone is no change: no log.
+    const from = await lastLogId();
+    const again = await call(url, admin.token, 'PUT', { timezone: 'Utc' });
+    assert.deepEqual(again.body.data, { timezone: 'UTC' });
+    assert.deepEqual(await timezoneLogs(from), []);
+  });
+  await resetTimezone();
+});
+
+test('a stored time zone in another spelling is read in its canonical spelling', async () => {
+  await testDb
+    .update(appSettings)
+    .set({ timezone: 'europe/paris' })
+    .where(eq(appSettings.id, APP_SETTINGS_ID));
+  assert.equal(await getTimezone(), 'Europe/Paris');
+  await resetTimezone();
+});
+
 // --- Kiosk API and check-ins --------------------------------------------------------------
 
 test('GET /api/checkins/schedule gives the time zone of the app', async () => {
@@ -308,13 +338,16 @@ const [activity] = await testDb
   .values({ name: 'English Club', startTime: '14:00', endTime: '16:00', createdBy: admin.actor.id })
   .returning();
 
+/** A scan at the instant `checkInTime`, as if the server clock showed that time. */
 function scan(checkInTime: string) {
-  return createCheckin({
-    registrationNumber: member.registrationNumber,
-    signature: signQRCode(member.registrationNumber).signature,
-    activityId: activity.id,
-    checkInTime,
-  });
+  return createCheckin(
+    {
+      registrationNumber: member.registrationNumber,
+      signature: signQRCode(member.registrationNumber).signature,
+      activityId: activity.id,
+    },
+    new Date(checkInTime)
+  );
 }
 
 async function clearCheckins() {
