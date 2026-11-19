@@ -1,6 +1,6 @@
 name: Build & Deploy API
 on:
-  push: { branches: [master] }
+  push: { branches: [master, develop] }
   workflow_dispatch:
 
 permissions: { contents: read, packages: write }
@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs: { tag: "${{ steps.meta.outputs.tag }}" }
     steps:
+      # master deploys production and develop deploys staging. Any other ref
+      # (a manual run from a feature branch or a tag) stops here: no image, no deploy.
+      - name: Check the branch
+        if: github.ref != 'refs/heads/master' && github.ref != 'refs/heads/develop'
+        run: |
+          echo "::error::This workflow deploys only master (production) and develop (staging), not ${GITHUB_REF}."
+          exit 1
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -28,7 +35,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/stem-acm/acm-backend:${{ steps.meta.outputs.tag }}
-            ghcr.io/stem-acm/acm-backend:master
+            ghcr.io/stem-acm/acm-backend:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -42,5 +49,5 @@ jobs:
           username: deploy
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /srv/infra/ipass
+            cd /srv/infra/${{ github.ref_name == 'master' && 'ipass' || 'ipass-staging' }}
             ./scripts/deploy.sh api ${{ needs.build.outputs.tag }}

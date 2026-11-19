@@ -22,6 +22,7 @@
     "api-docs": "open-cli http://localhost:3000/api-docs",
     "jwt:generate": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
     "seed": "tsx src/db/seed.ts",
+    "seed:staging": "tsx src/db/seedStaging.ts",
     "import-members": "tsx src/db/importMembers.ts",
     "db:seed": "docker compose exec backend pnpm seed",
     "prepare": "husky",
