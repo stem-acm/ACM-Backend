@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   index,
   integer,
@@ -7,11 +9,13 @@ import {
   pgEnum,
   pgTable,
   serial,
+  smallint,
   text,
   time,
   timestamp,
   varchar,
 } from 'drizzle-orm/pg-core';
+import { DEFAULT_TIMEZONE } from '../schemas/timezoneSchema';
 
 // Occupation enum
 export const occupationEnum = pgEnum('occupation', [
@@ -56,6 +60,18 @@ export const rolePolicies = pgTable('role_policies', {
   permissions: jsonb('permissions').$type<Record<string, boolean>>().notNull().default({}),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
+
+// Application settings: one row (id 1) with one column per setting.
+export const appSettings = pgTable(
+  'app_settings',
+  {
+    id: smallint('id').primaryKey().default(1),
+    timezone: varchar('timezone', { length: 64 }).notNull().default(DEFAULT_TIMEZONE),
+    checkinSchedule: jsonb('checkin_schedule').$type<unknown>().notNull(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [check('app_settings_single_row', sql`${t.id} = 1`)]
+);
 
 // Members table
 export const members = pgTable('members', {
@@ -183,6 +199,8 @@ export type NewVolunteer = typeof volunteers.$inferInsert;
 
 export type BookLoan = typeof bookLoans.$inferSelect;
 export type NewBookLoan = typeof bookLoans.$inferInsert;
+
+export type AppSetting = typeof appSettings.$inferSelect;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

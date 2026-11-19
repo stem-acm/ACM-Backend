@@ -2,11 +2,18 @@ import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/drizzle';
 import { activities, checkins, members } from '@/db/schema';
 import type { CheckinQueryInput, CreateCheckinInput } from '@/schemas/checkinSchema';
+import { getTimezone } from '@/services/appSettingsService';
 import { type Actor, memberLabel, snapshot, writeLog } from '@/services/auditService';
-import { getCheckinSlot, validateCheckinTime } from '@/utils/checkinUtils';
+import { getCheckinSchedule } from '@/services/checkinScheduleService';
+import { getCheckinSlot, getZoneDayBounds, validateCheckinTime } from '@/utils/checkinUtils';
 import { verifyQRCode } from '@/utils/qrUtils';
 
-export async function createCheckin(input: CreateCheckinInput) {
+/**
+ * Creates a check-in at `now`. The HTTP route always passes the server clock: the
+ * `checkInTime` of a request is not used, so a client cannot scan outside the schedule by
+ * sending another time. Tests pass `now` to scan at a chosen instant.
+ */
+export async function createCheckin(input: CreateCheckinInput, now: Date = new Date()) {
   // Verify QR code signature to prevent forged badges
   if (!verifyQRCode({ registrationNumber: input.registrationNumber, signature: input.signature })) {
     throw new Error('Invalid QR code signature');
@@ -34,43 +41,40 @@ export async function createCheckin(input: CreateCheckinInput) {
     throw new Error('Activity not found');
   }
 
-  const checkInTime = input.checkInTime ? new Date(input.checkInTime) : new Date();
+  const checkInTime = now;
+  const checkOutTime = input.checkOutTime ? new Date(input.checkOutTime) : undefined;
+  if (checkOutTime && checkOutTime <= checkInTime) {
+    throw new Error('Check-out time must be after check-in time');
+  }
 
-  // Validate check-in time
-  const validation = validateCheckinTime(checkInTime);
+  // Read the schedule and the time zone once: the new scan and the earlier scans use the
+  // same ones.
+  const [schedule, timeZone] = await Promise.all([getCheckinSchedule(), getTimezone()]);
+  const validation = validateCheckinTime(checkInTime, schedule, timeZone);
   if (!validation.allowed) {
     throw new Error(validation.reason);
   }
 
-  // Check for duplicate scan in the same slot
-  const currentSlot = getCheckinSlot(checkInTime);
+  // One scan per slot: refuse the scan if the member already has a scan of this day
+  // in the same slot. The slot of an earlier scan comes from the current schedule; an
+  // earlier scan that is now outside all slots (the schedule changed) has no slot and
+  // does not block the new scan.
+  const currentSlot = validation.slot;
   if (currentSlot) {
-    // Set time range based on slot type to be safe covering the whole slot
-    // For simplicity, we can just check if any checkin exists for this member
-    // where getCheckinSlot(checkin.checkInTime) === currentSlot && checkin.checkInTime is on the same day
-
-    // Actually, a simpler and more robust way is to query checkins for today
-    // and see if any match the slot.
-
-    // We already have the current slot. Let's find checkins for this member today.
-    const startOfDay = new Date(checkInTime);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(checkInTime);
-    endOfDay.setHours(23, 59, 59, 999);
-
+    const { start, end } = getZoneDayBounds(checkInTime, timeZone);
     const todaysCheckins = await db
       .select()
       .from(checkins)
       .where(
         and(
           eq(checkins.registrationNumber, member.registrationNumber),
-          gte(checkins.checkInTime, startOfDay),
-          lte(checkins.checkInTime, endOfDay)
+          gte(checkins.checkInTime, start),
+          lte(checkins.checkInTime, end)
         )
       );
 
     for (const checkin of todaysCheckins) {
-      if (getCheckinSlot(checkin.checkInTime) === currentSlot) {
+      if (getCheckinSlot(checkin.checkInTime, schedule, timeZone) === currentSlot) {
         throw new Error('Already scanned for this half day');
       }
     }
@@ -82,7 +86,7 @@ export async function createCheckin(input: CreateCheckinInput) {
       registrationNumber: member.registrationNumber,
       activityId: input.activityId,
       checkInTime,
-      checkOutTime: input.checkOutTime ? new Date(input.checkOutTime) : undefined,
+      checkOutTime,
       visitReason: input.visitReason,
     })
     .returning();

@@ -227,6 +227,43 @@ const swaggerOptions: Options = {
             },
           },
         },
+        CheckinSlot: {
+          type: 'object',
+          required: ['start', 'end'],
+          properties: {
+            start: { type: 'string', pattern: '^([01]\\d|2[0-3]):[0-5]\\d$', example: '08:00' },
+            end: { type: 'string', pattern: '^([01]\\d|2[0-3]):[0-5]\\d$', example: '12:00' },
+          },
+        },
+        CheckinDay: {
+          type: 'object',
+          required: ['open', 'slots'],
+          properties: {
+            open: { type: 'boolean', example: true },
+            slots: {
+              type: 'array',
+              maxItems: 12,
+              description: 'Empty when the day is closed. The end of a slot is excluded.',
+              items: { $ref: '#/components/schemas/CheckinSlot' },
+            },
+          },
+        },
+        CheckinSchedule: {
+          type: 'object',
+          description:
+            'The check-in schedule of each day. Times are HH:mm in the time zone of the app (GET /api/settings/timezone).',
+          required: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+          additionalProperties: false,
+          properties: {
+            monday: { $ref: '#/components/schemas/CheckinDay' },
+            tuesday: { $ref: '#/components/schemas/CheckinDay' },
+            wednesday: { $ref: '#/components/schemas/CheckinDay' },
+            thursday: { $ref: '#/components/schemas/CheckinDay' },
+            friday: { $ref: '#/components/schemas/CheckinDay' },
+            saturday: { $ref: '#/components/schemas/CheckinDay' },
+            sunday: { $ref: '#/components/schemas/CheckinDay' },
+          },
+        },
         Volunteer: {
           type: 'object',
           properties: {
