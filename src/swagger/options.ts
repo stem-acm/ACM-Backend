@@ -113,11 +113,6 @@ const swaggerOptions: Options = {
               nullable: true,
               example: 'A workshop about web development',
             },
-            image: {
-              type: 'string',
-              nullable: true,
-              example: '/uploads/activity.jpg',
-            },
             emoji: {
               type: 'string',
               nullable: true,
