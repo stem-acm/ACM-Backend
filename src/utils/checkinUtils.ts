@@ -141,3 +141,78 @@ export function validateCheckinTime(
   }
   return { allowed: true, slot };
 }
+
+/** A slot of a day of the schedule, with its day. */
+export interface DaySlot {
+  day: Day;
+  start: string;
+  end: string;
+}
+
+/** The place of a slot of today relative to the current time. */
+export type SlotState = 'ended' | 'current' | 'next' | 'later';
+
+export interface SlotOverview {
+  /** The day and the `HH:mm` wall-clock time of the instant in the time zone. */
+  day: Day;
+  time: string;
+  /** The day is closed or has no slot. */
+  closedToday: boolean;
+  /** The slot that contains the instant, or `null` outside all slots. */
+  slot: (DaySlot & { id: CheckinSlot }) | null;
+  /** The slots of today, sorted by start time. Empty on a closed day. */
+  todaySlots: { start: string; end: string; state: SlotState }[];
+  /** The next slot that starts after the instant: later today, else on the next open day. */
+  nextSlot: DaySlot | null;
+}
+
+function openSlots(schedule: CheckinSchedule, day: Day) {
+  const value = schedule[day];
+  if (!value?.open) return [];
+  return [...value.slots].sort((a, b) => a.start.localeCompare(b.start));
+}
+
+/**
+ * The slots of the day of an instant and where the instant is among them. A slot includes its
+ * start and excludes its end, as in `getCheckinSlot`.
+ */
+export function getSlotOverview(
+  date: Date,
+  schedule: CheckinSchedule,
+  timeZone: string
+): SlotOverview {
+  const { day, time } = getZoneDayAndTime(date, timeZone);
+  const slots = openSlots(schedule, day);
+  const current = slots.find((item) => item.start <= time && time < item.end);
+  const nextToday = slots.find((item) => item.start > time);
+
+  const todaySlots = slots.map((item) => {
+    let state: SlotState = 'later';
+    if (item === current) state = 'current';
+    else if (item.end <= time) state = 'ended';
+    else if (item === nextToday) state = 'next';
+    return { start: item.start, end: item.end, state };
+  });
+
+  let nextSlot: DaySlot | null = nextToday
+    ? { day, start: nextToday.start, end: nextToday.end }
+    : null;
+  // The next open day, up to the same day of the next week.
+  const index = DAYS.indexOf(day);
+  for (let offset = 1; !nextSlot && offset <= DAYS.length; offset++) {
+    const nextDay = DAYS[(index + offset) % DAYS.length];
+    const [first] = openSlots(schedule, nextDay);
+    if (first) nextSlot = { day: nextDay, start: first.start, end: first.end };
+  }
+
+  return {
+    day,
+    time,
+    closedToday: slots.length === 0,
+    slot: current
+      ? { id: `${day}-${current.start}`, day, start: current.start, end: current.end }
+      : null,
+    todaySlots,
+    nextSlot,
+  };
+}

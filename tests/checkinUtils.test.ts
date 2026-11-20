@@ -149,3 +149,152 @@ test('a day with a daylight saving time change has 23 or 25 hours', () => {
     time: '09:00',
   });
 });
+
+// --- Slot overview ------------------------------------------------------------------------
+
+/** `getSlotOverview`, checked against `getCheckinSlot` for the same instant. */
+function overview(date: Date, value: CheckinSchedule = schedule, timeZone = zone) {
+  const result = utils.getSlotOverview(date, value, timeZone);
+  assert.equal(result.slot?.id ?? null, utils.getCheckinSlot(date, value, timeZone));
+  return result;
+}
+
+test('inside a slot: the slot is current and the afternoon slot is next', () => {
+  assert.deepEqual(overview(at('2026-11-10T06:00:00Z')), {
+    day: 'tuesday',
+    time: '09:00',
+    closedToday: false,
+    slot: { id: 'tuesday-08:00', day: 'tuesday', start: '08:00', end: '12:00' },
+    todaySlots: [
+      { start: '08:00', end: '12:00', state: 'current' },
+      { start: '15:00', end: '18:00', state: 'next' },
+    ],
+    nextSlot: { day: 'tuesday', start: '15:00', end: '18:00' },
+  });
+});
+
+test('the start of a slot is included', () => {
+  assert.equal(overview(at('2026-11-10T05:00:00Z')).slot?.id, 'tuesday-08:00');
+});
+
+test('exactly at the end of a slot, the slot is ended and there is no current slot', () => {
+  const result = overview(at('2026-11-10T09:00:00Z')); // Tuesday 12:00
+  assert.equal(result.slot, null);
+  assert.equal(result.time, '12:00');
+  assert.deepEqual(
+    result.todaySlots.map((item) => item.state),
+    ['ended', 'next']
+  );
+  assert.deepEqual(result.nextSlot, { day: 'tuesday', start: '15:00', end: '18:00' });
+});
+
+test('between two slots: the first is ended, the second is next', () => {
+  const result = overview(at('2026-11-10T10:05:00Z')); // Tuesday 13:05
+  assert.equal(result.slot, null);
+  assert.equal(result.closedToday, false);
+  assert.deepEqual(result.todaySlots, [
+    { start: '08:00', end: '12:00', state: 'ended' },
+    { start: '15:00', end: '18:00', state: 'next' },
+  ]);
+  assert.deepEqual(result.nextSlot, { day: 'tuesday', start: '15:00', end: '18:00' });
+});
+
+test('before the first slot: the first is next, the others later', () => {
+  const result = overview(at('2026-11-10T04:00:00Z')); // Tuesday 07:00
+  assert.equal(result.slot, null);
+  assert.deepEqual(
+    result.todaySlots.map((item) => item.state),
+    ['next', 'later']
+  );
+  assert.deepEqual(result.nextSlot, { day: 'tuesday', start: '08:00', end: '12:00' });
+});
+
+test('after the last slot: the next slot is the first slot of the next open day', () => {
+  const tuesday = overview(at('2026-11-10T15:30:00Z')); // Tuesday 18:30
+  assert.deepEqual(
+    tuesday.todaySlots.map((item) => item.state),
+    ['ended', 'ended']
+  );
+  assert.deepEqual(tuesday.nextSlot, { day: 'wednesday', start: '08:00', end: '12:00' });
+  // Friday 19:00: Saturday has its own hours.
+  assert.deepEqual(overview(at('2026-11-13T16:00:00Z')).nextSlot, {
+    day: 'saturday',
+    start: '09:00',
+    end: '16:00',
+  });
+});
+
+test('a closed day has no slot, no today slots, and the next open day is skipped to', () => {
+  const custom: CheckinSchedule = structuredClone(DEFAULT_CHECKIN_SCHEDULE);
+  custom.sunday = { open: false, slots: [{ start: '08:00', end: '12:00' }] };
+  const sunday = overview(at('2026-11-15T07:00:00Z'), custom); // Sunday 10:00
+  assert.equal(sunday.day, 'sunday');
+  assert.equal(sunday.closedToday, true);
+  assert.equal(sunday.slot, null);
+  assert.deepEqual(sunday.todaySlots, []);
+  assert.deepEqual(sunday.nextSlot, { day: 'monday', start: '08:00', end: '12:00' });
+  // Saturday after 16:00: Sunday is closed, so Monday is next.
+  assert.deepEqual(overview(at('2026-11-14T14:00:00Z'), custom).nextSlot, {
+    day: 'monday',
+    start: '08:00',
+    end: '12:00',
+  });
+});
+
+test('when all days are closed, there is no next slot', () => {
+  const closed = Object.fromEntries(
+    Object.keys(DEFAULT_CHECKIN_SCHEDULE).map((day) => [day, { open: false, slots: [] }])
+  ) as CheckinSchedule;
+  const result = overview(at('2026-11-10T06:00:00Z'), closed);
+  assert.equal(result.closedToday, true);
+  assert.equal(result.slot, null);
+  assert.deepEqual(result.todaySlots, []);
+  assert.equal(result.nextSlot, null);
+});
+
+test('with one open day, after its last slot the next slot is the same day next week', () => {
+  const custom = Object.fromEntries(
+    Object.keys(DEFAULT_CHECKIN_SCHEDULE).map((day) => [day, { open: false, slots: [] }])
+  ) as CheckinSchedule;
+  custom.tuesday = { open: true, slots: [{ start: '08:00', end: '12:00' }] };
+  assert.deepEqual(overview(at('2026-11-10T15:30:00Z'), custom).nextSlot, {
+    day: 'tuesday',
+    start: '08:00',
+    end: '12:00',
+  });
+});
+
+test('the slots of a day are sorted by start time', () => {
+  const custom: CheckinSchedule = structuredClone(DEFAULT_CHECKIN_SCHEDULE);
+  custom.tuesday.slots = [
+    { start: '15:00', end: '18:00' },
+    { start: '08:00', end: '12:00' },
+  ];
+  const result = overview(at('2026-11-10T06:00:00Z'), custom);
+  assert.deepEqual(result.todaySlots, [
+    { start: '08:00', end: '12:00', state: 'current' },
+    { start: '15:00', end: '18:00', state: 'next' },
+  ]);
+});
+
+test('the overview uses the day and time of the zone, not of UTC', () => {
+  // Monday 21:30 UTC is Tuesday 00:30 in Mahajanga: before the first Tuesday slot.
+  const mahajanga = overview(at('2026-11-09T21:30:00Z'));
+  assert.equal(mahajanga.day, 'tuesday');
+  assert.equal(mahajanga.time, '00:30');
+  assert.deepEqual(
+    mahajanga.todaySlots.map((item) => item.state),
+    ['next', 'later']
+  );
+  // In UTC it is still Monday 21:30, after the last Monday slot.
+  const utc = overview(at('2026-11-09T21:30:00Z'), schedule, 'UTC');
+  assert.equal(utc.day, 'monday');
+  assert.deepEqual(
+    utc.todaySlots.map((item) => item.state),
+    ['ended', 'ended']
+  );
+  assert.deepEqual(utc.nextSlot, { day: 'tuesday', start: '08:00', end: '12:00' });
+  // Tuesday 06:00 UTC: in a slot in Mahajanga, before the first slot in UTC.
+  assert.equal(overview(at('2026-11-10T06:00:00Z')).slot?.id, 'tuesday-08:00');
+  assert.equal(overview(at('2026-11-10T06:00:00Z'), schedule, 'UTC').slot, null);
+});
