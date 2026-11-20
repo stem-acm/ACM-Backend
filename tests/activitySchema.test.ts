@@ -54,3 +54,9 @@ test('partial updates omit the name without inserting or changing it', () => {
   });
   assert.deepEqual(updateActivitySchema.parse({}), {});
 });
+
+test('an update that still carries image: null is accepted and the key is dropped', () => {
+  assert.deepEqual(updateActivitySchema.parse({ name: 'Youth hackathon', image: null }), {
+    name: 'Youth hackathon',
+  });
+});

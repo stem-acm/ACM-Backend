@@ -95,7 +95,6 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: '',
       },
       {
         emoji: '👥',
@@ -106,7 +105,6 @@ async function seed() {
         startTime: '13:00:00',
         endTime: '16:00:00',
         createdBy: adminUser.id,
-        image: '',
       },
       {
         emoji: '🤝',
@@ -118,7 +116,6 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: '',
       },
       {
         emoji: '🎓',
@@ -130,7 +127,6 @@ async function seed() {
         startTime: '10:00:00',
         endTime: '12:00:00',
         createdBy: adminUser.id,
-        image: '',
       },
       {
         emoji: '🎓',
@@ -141,7 +137,6 @@ async function seed() {
         startTime: '13:00:00',
         endTime: '16:00:00',
         createdBy: adminUser.id,
-        image: '',
       },
     ];
 

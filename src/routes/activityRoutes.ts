@@ -139,9 +139,6 @@ router.get('/:id', authMiddleware, requirePermission('activities.view'), getById
  *               description:
  *                 type: string
  *                 example: A workshop about web development
- *               image:
- *                 type: string
- *                 example: /uploads/activity.jpg
  *               isActive:
  *                 type: boolean
  *                 default: true
@@ -200,8 +197,6 @@ router.post(
  *                 type: string
  *                 maxLength: 40
  *               description:
- *                 type: string
- *               image:
  *                 type: string
  *               isActive:
  *                 type: boolean

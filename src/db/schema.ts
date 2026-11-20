@@ -97,7 +97,6 @@ export const activities = pgTable('activities', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  image: varchar('image', { length: 500 }),
   emoji: varchar('emoji', { length: 10 }),
   isPeriodic: boolean('is_periodic').notNull().default(true),
   dayOfWeek: dayOfWeekEnum('day_of_week'),
