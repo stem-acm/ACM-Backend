@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '@/middlewares/authMiddleware';
-import { checkinQuerySchema } from '@/schemas/checkinSchema';
+import { checkinQuerySchema, type InRoomQueryInput } from '@/schemas/checkinSchema';
+import { getRolePolicy } from '@/services/accessService';
 import { getTimezone } from '@/services/appSettingsService';
 import { getCheckinSchedule } from '@/services/checkinScheduleService';
 import {
@@ -8,6 +9,8 @@ import {
   deleteCheckin,
   getCheckins,
   getCheckinsByRegistrationNumber,
+  getInRoomCheckins,
+  verifyBadge,
 } from '@/services/checkinService';
 import eventEmitter from '@/utils/eventEmitter';
 
@@ -112,6 +115,47 @@ export async function getSchedule(_req: Request, res: Response): Promise<void> {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve the check-in schedule',
+      data: null,
+    });
+  }
+}
+
+export async function verify(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
+    const result = await verifyBadge(req.body, req.user);
+    res.status(200).json({ success: true, message: 'Badge verified', data: result });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to verify the badge', data: null });
+  }
+}
+
+export async function getInRoom(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized', data: null });
+      return;
+    }
+    // Users who can read check-ins get the full rows, as the dashboard; the others get the
+    // reduced member.
+    const policy = await getRolePolicy(req.user.role);
+    const result = await getInRoomCheckins(
+      req.query as unknown as InRoomQueryInput,
+      policy.permissions['checkins.view']
+    );
+    res.status(200).json({
+      success: true,
+      message: 'Members in room',
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve the members in the room',
       data: null,
     });
   }

@@ -141,7 +141,7 @@ UPLOAD_MAX_SIZE=5242880
 | `NODE_ENV` | Production enables the configured CORS origin allowlist and file-based logging. |
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | Token signing secret and lifetime. Changing the secret invalidates existing tokens. |
 | `QR_SECRET` | QR signing secret; falls back to JWT secret if omitted. Keep it stable or existing signed QR codes may become invalid. |
-| `ALLOWED_ORIGINS` | Comma-separated browser origins, including scheme, with no trailing slash or path. Include only frontend origins you use. |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins, including scheme, with no trailing slash or path. Include only frontend origins you use. Add `https://localhost` when the Android badge check app (iPass Badge Check) is used: its WebView sends this origin. |
 | `UPLOAD_MAX_SIZE` | Per-file limit in bytes; default 5 MiB. Nginx must also allow the entire multipart request. |
 | `LOG_LEVEL` | Winston verbosity; `info` is a reasonable starting point. |
 

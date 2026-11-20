@@ -28,6 +28,7 @@ export const FEATURES = [
   'checkins.create',
   'checkins.view',
   'checkins.delete',
+  'checkins.verify',
   'profile.edit',
   'settings.manage',
 ] as const;
@@ -58,6 +59,7 @@ const VOLUNTEER_FEATURES: Feature[] = [
   'activities.view',
   'books.view',
   'checkins.create',
+  'checkins.verify',
   'profile.edit',
 ];
 

@@ -45,5 +45,28 @@ export const checkinQuerySchema = z.object({
   order: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
+/** The body of `POST /api/checkins/verify`: the content of the QR code of a member badge. */
+export const verifyBadgeSchema = z.object({
+  registrationNumber: z.number().int().positive(),
+  signature: z.string().min(1).max(128),
+});
+
+/**
+ * The query of `GET /api/checkins/in-room`. Cursor pagination: `before` is the `nextBefore`
+ * of the previous page. A `limit` above 100 is lowered to 100.
+ */
+export const inRoomQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .default(20)
+    .transform((value) => Math.min(value, 100)),
+  before: z.coerce.number().int().positive().optional(),
+});
+
 export type CreateCheckinInput = z.infer<typeof createCheckinSchema>;
 export type CheckinQueryInput = z.infer<typeof checkinQuerySchema>;
+export type VerifyBadgeInput = z.infer<typeof verifyBadgeSchema>;
+export type InRoomQueryInput = z.infer<typeof inRoomQuerySchema>;

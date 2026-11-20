@@ -12,6 +12,7 @@ export const LOG_TYPES = [
   'member.created',
   'member.updated',
   'member.deleted',
+  'member.badge_verified',
   'activity.created',
   'activity.updated',
   'activity.deleted',

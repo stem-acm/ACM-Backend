@@ -21,9 +21,9 @@ function fields(query: Record<string, unknown>): string[] {
   return parsed.error.issues.map((issue) => issue.path.join('.'));
 }
 
-test('there are 25 log types, each one written once', () => {
-  assert.equal(LOG_TYPES.length, 25);
-  assert.equal(new Set(LOG_TYPES).size, 25);
+test('there are 26 log types, each one written once', () => {
+  assert.equal(LOG_TYPES.length, 26);
+  assert.equal(new Set(LOG_TYPES).size, 26);
 });
 
 test('each log type belongs to one of the 8 entities, and each entity has a log type', () => {
